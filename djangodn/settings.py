@@ -26,7 +26,9 @@ SECRET_KEY = 'dhqvc99^q*j8c*7q3sm1y%m3iuo+i=h-1ol2m83+)(=ukgq9hn'
 DEBUG = True
 
 ALLOWED_HOSTS = []
-
+STATIC_URL = '/static/'
+# Place static in the same location as webpack build files
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 # Application definition
 
