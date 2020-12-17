@@ -11,6 +11,7 @@ import sys
 from django.http.response import StreamingHttpResponse
 from django.core.files.storage import FileSystemStorage
 from django.http import FileResponse
+from django.views.decorators.csrf import csrf_exempt
 
 url = "http://172.17.0.4:7200/repositories/dn"
 
@@ -29,7 +30,7 @@ def download_file(request):
     response['Content-Disposition'] = 'attachment; filename="'+ file_name+ '"'
     return response
 
-def  test(request):  
+def  upload_distribution(request):  
     file_uploaded = request.FILES.get('file_uploaded')
     pid = request.data.get('pid')
     uri = request.data.get('uri')
@@ -194,7 +195,7 @@ def list_recents(request):
   
   json = []
   for result in results["results"]["bindings"]:
-    json.append({'title':result["title"]["value"], 'description': result["desc"]["value"], 'issued': result["date"]["value"], 'subject': result["subj_name"]["value"]})
+    json.append({'uri':result["dn"]["value"], 'title':result["title"]["value"], 'description': result["desc"]["value"], 'issued': result["date"]["value"], 'subject': result["subj_name"]["value"]})
   return JsonResponse({'rs':json}, safe=False) 
 
 def loc(request):
@@ -256,6 +257,22 @@ def operation(request):
         json.append({'id':result["uri"]["value"], 'name': result["label"]["value"]})
    
     return JsonResponse({'rs':json}, safe=False)  
+
+
+def instance(request):
+    results = query("""PREFIX owl: <http://www.w3.org/2002/07/owl#>
+  PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+  select ?pre ?prop ?label {{
+    <{}> ?pre ?prop. 
+    ?pre rdfs:label ?label.
+    }}""".format(request.GET.get('uri', '')))
+  
+    json = []
+    for result in results["results"]["bindings"]:
+        json.append({'property':result["label"]["value"] + " (" + result["pre"]["value"] + ") ", 'value': result["prop"]["value"]})
+   
+    return JsonResponse({'rs':json}, safe=False)  
+
 
 
 def format(request):
@@ -413,6 +430,39 @@ def getOntologies(request):
             on['description'] = '-'    
         json.append(on)
     return JsonResponse({'rs':json}, safe=False)
+
+@csrf_exempt
+def new_service(request):  
+    file_uploaded = request.FILES.get('file_uploaded')
+    operation = request.POST.get('operation')
+    input_format = request.POST.get('inputFormat')
+    output_format = request.POST.get('outputFormat')
+    uri = request.POST.get('uri')
+    subject = request.POST.get('subject')
+    myfile = request.FILES['file_uploaded']
+    fs = FileSystemStorage()
+    files_path = os.path.join(settings.BASE_DIR, 'public',  'static', 'scripts', myfile.name)
+    filename = fs.save(files_path, myfile)
+    print(fs.url(filename))
+    prefixes = []
+    prefixes.append("PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>")
+    triples = []    
+    triples.append("{} a dn:Service.".format(uri))
+    triples.append("{} dn:name \"{}\".".format(uri, request.POST.get('name')))
+    triples.append("{} dn:description \"{}\".".format(uri, request.POST.get('description')))
+    triples.append("{} dn:hasOperation <{}>.".format(uri,  operation))
+    triples.append("{} dn:hasInputFormat <{}>.".format(uri,  input_format))
+    triples.append("{} dn:hasOutputFormat <{}>.".format(uri,  output_format))
+    triples.append("{} dn:hasSubject <http://melodi.irit.fr/resource/Subject/{}>.".format(uri,  subject))
+    
+    
+    print("\n ".join(triples))
+
+    #insertData("\n ".join(prefixes), "\n ".join(triples))
+    
+
+    return JsonResponse({'result':{}} , safe=False)
+
 
 def new_dataset(request):  
     data = json.loads(request.body)

@@ -34,4 +34,6 @@ urlpatterns = [
     path('api/list_recents', views.list_recents, name='list_recents'),
     path('api/loc', views.loc, name='loc'),    
     path('api/stat_key', views.stat_key, name='stat_key'),
+    path('api/instance', views.instance, name='instance'),
+    path('api/new_service', views.new_service, name='new_service'),
 ]
