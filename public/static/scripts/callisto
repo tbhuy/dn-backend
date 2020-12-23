@@ -1,0 +1,192 @@
+<http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#PSD_welch.py> <http://www.w3.org/2000/01/rdf-schema#label> "psd_welch.py" .
+<http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#PSD_periodogram.py> <http://www.w3.org/2000/01/rdf-schema#label> "psd_periodogram.py" .
+
+    liste_results.append([id_elt, resume, description, subjects, url, keywords, type_elt, store])
+
+    22-rdf-syntax-ns#type> "http://www.callisto.calmip.univ-toulouse.fr/ARCAS.rdf#MeasuredQuantity" .
+<http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#> <http://www.w3.org/2000/01/rdf-schema#isDefinedBy> "ASCII files with aerodynamic coefficients (1st column = time, 2nd column = CD, 3rd column = CL) obtained with NSMB unsteady simulations of the 2D model of the Large Scale A320 wing+flap landing configuration (flap deflection 25\u00B0) representative of PoliMi experimental tests model, including test section walls.\nConfigurations and computational parameters are indicated in the filename:\n- m for Mach number\n- aoa for Angle of Attack (degree)\n- camb for cambering of the flap (% of cambering max = 0.1m)\n- flap for flapping frequency in Hz (flapping amplitude fixed at 0.00035m)" .
+<http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#> <http://www.w3.org/2000/01/rdf-schema#isDefinedBy> "Attached the snapshots of PIV results computed during the experimental test in MILANO on LS prototype.\nPlease read the 'README' file attached." .
+<http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#> <http://www.w3.org/2000/01/rdf-schema#isDefinedBy> "BEWARE - TESTING PURPOSES only, those files should NOT be used for scientific analysis, they DO NOT belong to any real-world measurements.\n\nPressure coefficient calculated from measured pressure on a plane wing\n\nC_p = (P-P_inf)/(0.5*rho_inf*V_inf^2)\n\nWith:\nP is the measured pressure (Pascals)\nP_inf is a reference pressure taken as the static pressure at infinity (upstream of the wing), free-stream\nrho_inf is the density taken at infinity, free-stream\nV_inf is the velocity of the flow to infinity, free-streams://callisto.calmip.univ-toulouse.fr/OntoWiki/" .
+<http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#> <http://www.w3.org/2000/01/rdf-schema#isDefinedBy> "BEWARE - TESTING PURPOSES only, those files should NOT be used for scientific analysis, they DO NOT belong to any real-world measurements.\nSignal for PSD processing" .
+<http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#> <http://www.w3.org/2000/01/rdf-schema#isDefinedBy> "Elaborated results of the PIV measures for all tested cases (N.B. \nbefore proceeding with the analysis of the results, please read carefully the 'README' file which contains the instructions to match the windows of the two cameras and to manage the blanking plot; if possible it is advisable to view the results with the Tecplot software, but being all files in ascii format it is possible to open and process them with the desired software (Matlab, ...), in order to allow the user an independent consultation and analysis;" .
+<http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#> <http://www.w3.org/2000/01/rdf-schema#isDefinedBy> "Exemple d'un vol IAGOS au d\u00E9part de Frankfort. Le fichier est au format texte." .
+<http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#> <http://www.w3.org/2000/01/rdf-schema#isDefinedBy> "Fichier au format ASCII.\n\nForces a\u00E9rodynamiques int\u00E9gr\u00E9es autour d\u2019une aile d\u2019A320 de corde c = 0.15 m, d\u2019incidence alpha = 2.5\u00B0. Ce fichier a \u00E9t\u00E9 g\u00E9n\u00E9r\u00E9 \u00E0 l\u2019issue d\u2019une simulation CFD de formulation volumes finis (VF) dans une configuration bidimensionnelle (2D). \n\nParam\u00E8tres\u00A0:\n\nType de morphing = vibration sinuso\u00EFdale du bord de fuite\nLongueur de la d\u00E9formation = 5c/100\nAmplitude de la d\u00E9formation = +/-1\u00B0 autour du profil neutre\nFr\u00E9quence de vibration = 350 Hz\nNombre de Mach \u00E0 l\u2019infini = 0.78\nNombre de Reynolds = 2.06e6\nTemp\u00E9rature \u00E0 l\u2019infini = 261.22 K\nPression \u00E0 l\u2019infini = 67574 Pa\nViscosit\u00E9 = suit le mod\u00E8le de Sutherland\n\nDescriptif des donn\u00E9es : \n\ncolonne 1 = t (en secondes)\ncolonne 2 = Cx\ncolonne 3 = Cz\ncolonne 4 = Cm" .
+<http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#> <http://www.w3.org/2000/01/rdf-schema#isDefinedBy> "Forces and integrated loads for the A320 transonic cruise configuration (DEMONSTRATION project).\n\nConfigurations considered:\n- static\n- 60/100/200 Hz frequencies\n- 0.35/1.0/1.5/2.0 mm amplitudes\n\nMorphing patch region started at 95% of the airfoil chord.\n\n------------------\nAttachments\n------------------\n\ncp files\n\nThey follow the name convention: cp_<frequency>_<amplitude>.dat\nThe static case is noted simply as \"static\", since it has no amplitude.\nColumns:\nx/c y/c z/c Cp abs(Cf) y+ u* g_trans\n(ignore g_trans, it was always set to 1.0, denoting fully turbulent simulation)\n\nclcd files\n\nThey follow the name convention: clcd_<frequency>.dat\nColumns:\namplitude (mm) Cl Cd Cl_sdv Cd_sdv\n(the static case clcd file has amplitude set to 0)" .
+<http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#> <http://www.w3.org/2000/01/rdf-schema#isDefinedBy> "IMP PAN - transonic - pressure measurements on profile" .
+<http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#> <http://www.w3.org/2000/01/rdf-schema#isDefinedBy> "Mesure avec un capteur \u00E0 r\u00E9seau de Bragg de Cementys \u00E0 l'IMFT le 19 d\u00E9cembre 2019.\nLe capteur est \u00E0 72% de la corde, l'angle d'incidence de l'aile est de 4\u00B0 et le nombre de Reynolds de 2,2 millions.\nLa fr\u00E9quence d'acquisition est de 5kHz." .
+<http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#> <http://www.w3.org/2000/01/rdf-schema#isDefinedBy> "Mesures exp\u00E9rimentales du prototype RS : pression et forces. Fichiers Matlab g\u00E9n\u00E9r\u00E9s avec Matlab 2015a et sup\u00E9rieur. Corde c = 0.59 m, Vitesse de soufflerie Uinf = 10.5 et 21.5 m/s (nombre de Reynolds Re = 500k et 1M). \nCas test\u00E9s : baseflow (sans contr\u00F4le), wobulation (modulation de fr\u00E9quence d'actionnement entre 1 et 80Hz), boucle ferm\u00E9e (retard Nd = 62, scan en gain). Fr\u00E9quence d'acquisition Fs : 5.95 kHz pour la pression, 5kHz pour la force (baseflow et wobulation), 1 kHz pour la force (boucle ferm\u00E9e). Temps d'acquisition Ts = 2 min (baseflow et wobulation), 20min environ (boucle ferm\u00E9e)." .
+<http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#> <http://www.w3.org/2000/01/rdf-schema#isDefinedBy> "Pressure coefficient distribution on wing and flap for all tested configuration: \n-TAKE-OFF CONFIGURATION: AoA=[0, 2, 4, 6, 8], Camber=[Base Camber1 Camber2 Camber3], Speed=[30 m/s 34,1 m/s 40 m/s] \n-LANDING CONFIGURATION: AoA=[0, 2, 4, 6], Camber=[Base Camber1 Camber2 Camber3], Speed=[30 m/s 34,1 m/s 40 m/s] \n\nEach file contains 6 columns: x_[m]:(x-coordinates of pressure taps) , z_[m]:(z-coordinates of pressure taps) , Cp: (pressure coefficient for each pressure tap) , DynamicPressure_[Pa]:(free-stream dynamic pressure measured at test-section inlet) , AoA_[deg]:(angle-of-attack measured by inclinometer) , WindSpeed_[m/s]: (free-stream velocity measured at test-section inlet)" .
+<http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#> <http://www.w3.org/2000/01/rdf-schema#isDefinedBy> "Raw data of four measurements from the Cementys sensors.\nThe files contains three rows with wavelength data, each row corresponds to the data of a sensor. Each file correspond to a measurement of ten minutes with a number of Reynolds of 2,2 and a angle of attack of 8\u00B0." .
+<http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#> <http://www.w3.org/2000/01/rdf-schema#isDefinedBy> "See attached \"README_aerocoeff\"  file for details" .
+<http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#> <http://www.w3.org/2000/01/rdf-schema#isDefinedBy> "Trajectoire simul\u00E9e d'un A320 entre Blagnac LFBO et Roissy LFPG, au format .CSV.\nDonn\u00E9es produites par le module Avion de la plateforme IESTA de l'ONERA.\nCe module utilise le mod\u00E8le de performances BADA." .
+
+<http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Ontology> .
+
+
+https://callisto.calmip.univ-toulouse.fr/cgi-bin/Allegro_Fcts.py?repo=demonstration&case=generic&query=FFT
+
+Sorry, nothing was found for these roles: Admin, File Downloader, Dataverse + Dataset Creator, Dataverse Creator, Dataset Creator, Contributor, Curator, Member
+
+
+A relevant dataset may be the following:
+"BEWARE - TESTING PURPOSES only, those files should NOT be used for scientific analysis, they DO NOT belong to any real-world measurements. Signal for PSD processing"
+
+View it on ontology
+https://callistodataverse:8080/api/access/datafile/4?key=Your%20API%20Key%20h%20724b1f6f-f8f5-4d85-bc16-e4a6ebaf3ba0ere
+
+597
+$("#about").append("<a href='https://{{allegro_subdomain}}.{{callisto_name}}.{{callisto_topdomainname}}/#/repositories/"+aff_repo.repository+"/node/<http://www.callisto.calmip.univ-toulouse.fr/"+aff_repo.repository.toUpperCase()+".rdf%23"+svc+">'>View it on ontology</a><br/>");
+
+
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX myont: <http://callisto-local.mylaptop//DEMONSTRATION.rdf#>
+        PREFIX arcas: <http://www.callisto.calmip.univ-toulouse.fr/ARCAS.rdf#>
+        PREFIX service: <http://www.daml.org/services/owl-s/1.2/Service.owl#>
+        PREFIX profile: <http://www.daml.org/services/owl-s/1.2/Profile.owl#>
+        PREFIX mp:<http://purl.org/mp/>
+        SELECT DISTINCT ?svc ?desc ?param ?url ?soft
+        WHERE {
+        myont:claim1598866134.9636025 mp:qualifiedBy ?qual.
+        ?svc arcas:hasOutput ?out.
+        ?out arcas:isCombinedToParam ?qual.
+        ?svc service:presents ?profile.
+        ?profile profile:textDescription ?desc.
+        ?profile arcas:hasInput ?input_agg.
+        ?input_agg arcas:isCombinedToParam ?param.
+        ?profile arcas:hasQuerySoftware ?soft.
+        ?svc arcas:isAccessedThrough ?accessurl.
+        ?accessurl rdfs:isDefinedBy ?url.
+        }
+
+        PREFIX myont: <http://callisto-local.mylaptop/DEMONSTRATION.rdf#>
+        PREFIX arcas: <http://www.callisto.calmip.univ-toulouse.fr/ARCAS.rdf#>
+        PREFIX service: <http://www.daml.org/services/owl-s/1.2/Service.owl#>
+        PREFIX profile: <http://www.daml.org/services/owl-s/1.2/Profile.owl#>
+        PREFIX mp:<http://purl.org/mp/>
+        SELECT DISTINCT ?statement ?qualifier ?claim ?ref ?cit ?qual
+        WHERE {
+        ?claim mp:supports ?ref.
+        ?claim mp:qualifiedBy ?qual.
+        ?claim mp:statement ?statement.
+        ?qual rdfs:isDefinedBy ?qualifier.
+        ?ref mp:citation ?cit.
+        }
+
+
+
+
+PREFIX profile: <http://www.daml.org/services/owl-s/1.2/Profile.owl#>
+ 16             PREFIX service: <http://www.daml.org/services/owl-s/1.2/Service.owl#>
+ 17             PREFIX arcas: <http://www.callisto.calmip.univ-toulouse.fr/ARCAS.rdf#>
+ 18             PREFIX rdfsns: <http://www.w3.org/2000/01/rdf-schema#>
+ 19             SELECT DISTINCT ?service ?information ?definition ?profdef ?param_out ?param_in ?label_first_out ?firstdef
+ 20             WHERE {
+ 21             <http://callisto-local.mylaptop/DEMONSTRATION.rdf#1605191342.917547_4> arcas:hasOutput ?out .
+ 22             <http://callisto-local.mylaptop/DEMONSTRATION.rdf#1605191342.917547_4> service:presents ?firstprofile .
+ 23             OPTIONAL {
+ 24             ?firstprofile arcas:hasInput ?in2 .
+ 25             ?in2 arcas:isCombinedToParam ?param_in .
+ 26             }
+ 27             ?firstprofile profile:textDescription ?firstdef.
+ 28             ?out arcas:isCombinedToParam ?param_out .
+ 29             ?out arcas:isCombinedToFormat ?format_out .
+ 30             ?out arcas:isCombinedToUnit ?unit_out .
+ 31             ?param_out rdfsns:isDefinedBy ?label_first_out .
+ 32             ?service profile:hasInput ?out2 .
+ 33             ?out2 arcas:isCombinedToParam ?param_out .
+ 34             ?service arcas:hasOutput ?out3 .
+ 35             ?out3 arcas:isCombinedToParam ?information .
+ 36             ?information rdfsns:isDefinedBy ?definition.
+ 37             ?service service:presents ?profile .
+ 38             ?profile  profile:textDescription ?profdef.
+ 39             }
+
+PREFIX profile: <http://www.daml.org/services/owl-s/1.2/Profile.owl#>
+ 43             PREFIX service: <http://www.daml.org/services/owl-s/1.2/Service.owl#>
+ 44             PREFIX arcas: <http://www.callisto.calmip.univ-toulouse.fr/ARCAS.rdf#>
+ 45             PREFIX rdfsns: <http://www.w3.org/2000/01/rdf-schema#>
+ 46             SELECT DISTINCT ?service ?information ?definition ?profdef ?param_out ?param_in ?label_first_out ?firstdef
+ 47             WHERE {
+ 48             <http://callisto-local.mylaptop/DEMONSTRATION.rdf#WelchPSDService> arcas:hasOutput ?out .
+ 49             <http://callisto-local.mylaptop/DEMONSTRATION.rdf#WelchPSDService> service:presents ?firstprofile .
+ 50             OPTIONAL {
+ 51             ?firstprofile arcas:hasInput ?in2 .
+ 52             ?in2 arcas:isCombinedToParam ?param_in .
+ 53             }
+ 54             ?firstprofile profile:textDescription ?firstdef.
+ 55             ?out arcas:isCombinedToParam ?param_out .
+ 56             ?out arcas:isCombinedToFormat ?format_out .
+ 57             ?out arcas:isCombinedToUnit ?unit_out .
+ 58             ?param_out rdfsns:isDefinedBy ?label_first_out .
+ 59             ?service profile:hasInput ?out2 .
+ 60             ?out2 arcas:isCombinedToParam ?param_out .
+ 61             ?service arcas:hasOutput ?out3 .
+ 62             ?out3 arcas:isCombinedToParam ?information .
+ 63             ?information rdfsns:isDefinedBy ?definition.
+ 64             ?service service:presents ?profile .
+ 65             ?profile  profile:textDescription ?profdef.
+ 66             }
+
+
+PREFIX myont: <http://callisto-local.mylaptop/DEMONSTRATION.rdf#>
+113         PREFIX profile: <http://www.daml.org/services/owl-s/1.2/Profile.owl#>
+114         PREFIX service: <http://www.daml.org/services/owl-s/1.2/Service.owl#>
+115         PREFIX arcas: <http://www.callisto.calmip.univ-toulouse.fr/ARCAS.rdf#>
+116         PREFIX rdfsns: <http://www.w3.org/2000/01/rdf-schema#>
+117         SELECT DISTINCT ?url ?soft ?description
+118         WHERE {
+119         <http://callisto-local.mylaptop/DEMONSTRATION.rdf#WelchPSDService> service:presents ?profile.
+120         ?profile arcas:hasQuerySoftware ?soft_profile.
+121         OPTIONAL {?soft_profile rdfsns:label ?soft.}
+122         <http://callisto-local.mylaptop/DEMONSTRATION.rdf#WelchPSDService> arcas:isAccessedThrough ?address.
+123         ?address rdfsns:isDefinedBy ?url.
+124         OPTIONAL {
+125         <http://callisto-local.mylaptop/DEMONSTRATION.rdf#WelchPSDService> service:presents ?profile.
+126         ?profile profile:textDescription ?description.
+127         }}
+
+
+<http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#NoURL> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.callisto.calmip.univ-toulouse.fr/ARCAS.rdf#AccessUrl> .
+<http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#NoURL> <http://purl.org/mp/elementOf> <http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#ref1598866134.9375112> .
+
+Sentences which qualify a Statement are Qualifiers.
+A Qualifier is a Sentence, which may modify a
+Statement. References and SemanticQualifiers
+(tags) are two varieties of Qualifier.
+
+
+<http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#NSMB> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#NamedIndividual> .
+<http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#NSMB_DEMONSTRATION> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#NamedIndividual> .
+<http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#NSMB_DEMONSTRATION> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#NSMB> .
+<http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#NSMB> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#NSMB> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://www.ebi.ac.uk/swo/SWO_0000001> .
+
+<http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#Cx_Cz_Cm> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#NamedIndividual> .
+<http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#Cx_Cz_Cm> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#T1_morphing> .
+<http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#Cx_Cz_Cm> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#plt_files> .
+<http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#Cx_Cz_Cm> <http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#has_column> <http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#ColType1> .
+<http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#Cx_Cz_Cm> <http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#has_column> <http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#ColType2> .
+<http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#Cx_Cz_Cm> <http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#has_column> <http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#ColType3> .
+<http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#Cx_Cz_Cm> <http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#has_column> <http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#ColType4> .
+<http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#Cx_Cz_Cm> <http://www.ebi.ac.uk/swo/SWO_0000089> <http://{{callisto_name}}.{{callisto_topdomainname}}/DEMONSTRATION.rdf#NSMB_DEMONSTRATION> .
+
+
+<http://www.ebi.ac.uk/swo/SWO_0000089> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#ObjectProperty> .
+<http://www.ebi.ac.uk/efo/swo/SWO_0000089> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/2002/07/owl#Class> .
+<http://www.ebi.ac.uk/efo/swo/SWO_0000089> <http://www.w3.org/2000/01/rdf-schema#subClassOf> <http://purl.obolibrary.org/obo/IAO_0000064> .
+<http://www.ebi.ac.uk/efo/swo/SWO_0000089> <http://www.w3.org/2000/01/rdf-schema#label> "CLR algorithm"^^<http://www.w3.org/2001/XMLSchema#string> .
+
+  <owl:Class rdf:about="http://www.ebi.ac.uk/swo/SWO_1100123">
+        <rdfs:subClassOf rdf:resource="http://purl.obolibrary.org/obo/IAO_0000064"/>
+        <rdfs:label>CLR algorithm</rdfs:label>
+    </owl:Class>
+
+        <owl:Class rdf:about="http://www.ebi.ac.uk/efo/swo/SWO_0000089">
+        <rdfs:subClassOf rdf:resource="http://www.geneontology.org/formats/oboInOwl#ObsoleteClass"/>
+        <obo:IAO_0100001 rdf:resource="http://www.ebi.ac.uk/swo/SWO_0000089"/>
+        <efo:obsoleted_in_version>1.7</efo:obsoleted_in_version>
+        <efo:reason_for_obsolescence xml:lang="en">AL 1.10.2019: Improperly formatted IRI replaced with correct one. Please see https://github.com/allysonlister/swo/issues/10 for more information.</efo:reason_for_obsolescence>
+        <rdfs:label xml:lang="en">obsolete CLR algorithm</rdfs:label>
+        <owl:deprecated rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">true</owl:deprecated>
+    </owl:Class>
+    

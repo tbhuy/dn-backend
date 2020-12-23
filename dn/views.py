@@ -265,6 +265,8 @@ def instance(request):
   select ?pre ?prop ?label {{
     <{}> ?pre ?prop. 
     ?pre rdfs:label ?label.
+    FILTER (lang(?label)= "en" || lang(?label)="")
+
     }}""".format(request.GET.get('uri', '')))
   
     json = []
@@ -450,7 +452,7 @@ def new_service(request):
     triples.append("{} a dn:Service.".format(uri))
     triples.append("{} dn:name \"{}\".".format(uri, request.POST.get('name')))
     triples.append("{} dn:description \"{}\".".format(uri, request.POST.get('description')))
-    triples.append("{} dn:hasOperation <{}>.".format(uri,  operation))
+    triples.append("{} dn:performsOperation <{}>.".format(uri,  operation))
     triples.append("{} dn:hasInputFormat <{}>.".format(uri,  input_format))
     triples.append("{} dn:hasOutputFormat <{}>.".format(uri,  output_format))
     triples.append("{} dn:hasSubject <http://melodi.irit.fr/resource/Subject/{}>.".format(uri,  subject))
@@ -458,10 +460,10 @@ def new_service(request):
     
     print("\n ".join(triples))
 
-    #insertData("\n ".join(prefixes), "\n ".join(triples))
+    insertData("\n ".join(prefixes), "\n ".join(triples))
     
 
-    return JsonResponse({'result':{}} , safe=False)
+    return JsonResponse({'result':{'rs':'ok'}} , safe=False)
 
 
 def new_dataset(request):  
@@ -592,30 +594,39 @@ def new_dataset(request):
     insertData("\n ".join(prefixes), "\n ".join(triples))
     return JsonResponse({'result':rs} , safe=False)
 
-def getClasses(request):      
-    results = query(""" SELECT DISTINCT ?uri ?label ?comment
-    WHERE
-         { 
-              ?uri  rdf:type   owl:Class . 
-                   ?uri    rdfs:label  ?label .
-                   FILTER (lang(?label) = "" || lang(?label) = "en" )
-               OPTIONAL {  
-                   ?uri    rdfs:comment  ?comment .
-                   FILTER (lang(?comment) = "" || lang(?comment) = "en" )
-               } 
-         } 
-         ORDER BY ASC(?label)""")
-     
-    json = []
-    for result in results["results"]["bindings"]:
-        on = {'uri':result["uri"]["value"], 'label':result["label"]["value"]}
-        if result.get("description"):
-            on['comment'] = result["comment"]["value"]
-        else:
-            on['comment'] = '-'    
-        json.append(on)
-       
-    return JsonResponse({'result':json} , safe=False)
+def getClasses(request):
+  url = "http://172.17.0.4:7200/repositories/dn"
+  sparql = SPARQLWrapper(url)
+  sparql.setReturnFormat(JSON)     
+  sparql.setQuery(""" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> 
+        SELECT ?uri ?label ?comment ?onto
+        WHERE {
+           ?uri rdf:type owl:Class .
+           ?uri rdfs:label ?label.
+           FILTER (lang(?label)= "en" || lang(?label)="") 
+        OPTIONAL
+           {
+           ?uri rdfs:comment ?comment.
+           FILTER (lang(?comment)= "en" || lang(?comment)="")
+           }
+        ?uri rdfs:isDefinedBy ?onto.
+        } order by ?label""")
+        
+  results = sparql.query().convert()
+  json = []
+  for result in results["results"]["bindings"]:
+    cls = {'uri':result["uri"]["value"], 'onto':result["onto"]["value"]}
+    if result.get("label"):
+      cls['label'] = result["label"]["value"]
+    else:
+      cls['label'] = ''
+    if result.get("comment"):
+      cls["comment"] = result["comment"]["value"]
+    else:
+      cls["comment"] = '-'
+    json.append(cls)
+  json.append({'uri': 'http://purl.org/dc/terms/Thing' , 'onto':'http://purl.org/dc/terms/', 'label':'Thing', 'comment':'A blank class'})
+  return JsonResponse({'rs':json}, safe=False)
  
 def getProperties(request):
     results = query("""SELECT DISTINCT ?uri ?label ?comment ?domain ?domain_label ?range 
