@@ -214,7 +214,7 @@ select ?dn ?title ?geom where {
    
     return JsonResponse({'rs':json}, safe=False) 
 
-def stat_key(request):
+def get_stat_key(request):
     results = query("""PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>
 PREFIX dcat: <http://www.w3.org/ns/dcat#>
 select ?keyword (count(?keyword) as ?total) where { 
@@ -229,7 +229,7 @@ group by ?keyword""")
    
     return JsonResponse({'rs':json}, safe=False) 
 
-def stat_subj(request):
+def get_stat_subj(request):
     results = query("""select ?name (count (?name) as ?total) where { 
 	?ds <http://melodi.irit.fr/ontologies/dn/hasSubject> ?subj .
     ?subj <http://melodi.irit.fr/ontologies/dn/name> ?name.    
@@ -241,7 +241,7 @@ def stat_subj(request):
    
     return JsonResponse({'rs':json}, safe=False) 
 
-def operation(request):
+def get_operations(request):
     results = query("""PREFIX owl: <http://www.w3.org/2002/07/owl#>
   PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
   select ?uri ?label where {
@@ -258,8 +258,34 @@ def operation(request):
    
     return JsonResponse({'rs':json}, safe=False)  
 
+def get_datasets(request):
+  if request.GET.get("search") == "title":
+    filter = 'FILTER regex(str(?title), "' + request.GET.get('value')+ '")'
+  elif request.GET.get("search") == "keyword":
+    filter = 'FILTER regex(str(?keyword), "' + request.GET.get('value')+ '")'
 
-def instance(request):
+  results = query("""PREFIX dc: <http://purl.org/dc/elements/1.1/>
+  PREFIX dct: <http://purl.org/dc/terms/>
+  PREFIX dcat: <http://www.w3.org/ns/dcat#>
+  PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>
+  select ?dn ?title ?description ?issued ?subject where {{ 
+	?dn a  dn:Dataset.
+    ?dn dct:issued ?issued.
+    ?dn dct:title ?title.
+    ?dn dct:description ?description.
+    ?dn dn:hasSubject ?subj.
+    ?subj dn:name ?subject.
+    ?dn dcat:keyword ?keyword.
+    {}
+    }}
+    """.format(filter))
+  
+  json = []
+  for result in results["results"]["bindings"]:
+    json.append({'uri':result["dn"]["value"], 'title':result["title"]["value"], 'description': result["description"]["value"], 'issued': result["issued"]["value"], 'subject': result["subject"]["value"]})
+  return JsonResponse({'rs':json}, safe=False)  
+
+def get_instance(request):
     results = query("""PREFIX owl: <http://www.w3.org/2002/07/owl#>
   PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
   select ?pre ?prop ?label {{
@@ -277,7 +303,7 @@ def instance(request):
 
 
 
-def format(request):
+def get_formats(request):
     results = query("""PREFIX owl: <http://www.w3.org/2002/07/owl#>
   PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
   select ?uri ?label where {
@@ -294,7 +320,7 @@ def format(request):
    
     return JsonResponse({'rs':json}, safe=False)
 
-def agent(request):
+def get_agent(request):
     results = query(""" PREFIX foaf: <http://xmlns.com/foaf/0.1/>
         SELECT ?uri ?name ?email 
         WHERE {{
@@ -319,7 +345,7 @@ def agent(request):
         json.append(ins)
     return JsonResponse({'rs':json}, safe=False)
 
-def getDataProps(request):
+def get_data_props(request):
     results = query(""" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> 
         SELECT ?uri ?label ?comment ?domain ?range ?domainLabel
         WHERE {
@@ -379,7 +405,7 @@ def getDataProps(request):
         json.append(cls)
     return JsonResponse({'rs':json}, safe=False)
 
-def getClasses(request):
+def get_classes(request):
   results = query(""" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> 
         SELECT ?uri ?label ?comment ?onto
         WHERE {
@@ -409,7 +435,7 @@ def getClasses(request):
   json.append({'uri': 'http://purl.org/dc/terms/Thing' , 'onto':'http://purl.org/dc/terms/', 'label':'Thing', 'comment':'A blank class'})
   return JsonResponse({'rs':json}, safe=False)
 
-def getOntologies(request):
+def get_ontologies(request):
     results = query(""" PREFIX dc: <http://purl.org/dc/terms/>
         SELECT ?uri ?title ?description 
         WHERE {
@@ -420,9 +446,7 @@ def getOntologies(request):
            }
         }
         ORDER BY ?title
-        """)
-        
-
+        """)    
     json = []
     for result in results["results"]["bindings"]:
         on = {'uri':result["uri"]["value"], 'title':result["title"]["value"]}
@@ -459,10 +483,7 @@ def new_service(request):
     
     
     print("\n ".join(triples))
-
-    insertData("\n ".join(prefixes), "\n ".join(triples))
-    
-
+    insertData("\n ".join(prefixes), "\n ".join(triples))  
     return JsonResponse({'result':{'rs':'ok'}} , safe=False)
 
 
@@ -593,70 +614,3 @@ def new_dataset(request):
     triples.append("{} dcat:landingPage \"http://localhost:8085/dataset.xhtml?persistentId={}\".".format(data.get('uri'), rs))
     insertData("\n ".join(prefixes), "\n ".join(triples))
     return JsonResponse({'result':rs} , safe=False)
-
-def getClasses(request):
-  url = "http://172.17.0.4:7200/repositories/dn"
-  sparql = SPARQLWrapper(url)
-  sparql.setReturnFormat(JSON)     
-  sparql.setQuery(""" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> 
-        SELECT ?uri ?label ?comment ?onto
-        WHERE {
-           ?uri rdf:type owl:Class .
-           ?uri rdfs:label ?label.
-           FILTER (lang(?label)= "en" || lang(?label)="") 
-        OPTIONAL
-           {
-           ?uri rdfs:comment ?comment.
-           FILTER (lang(?comment)= "en" || lang(?comment)="")
-           }
-        ?uri rdfs:isDefinedBy ?onto.
-        } order by ?label""")
-        
-  results = sparql.query().convert()
-  json = []
-  for result in results["results"]["bindings"]:
-    cls = {'uri':result["uri"]["value"], 'onto':result["onto"]["value"]}
-    if result.get("label"):
-      cls['label'] = result["label"]["value"]
-    else:
-      cls['label'] = ''
-    if result.get("comment"):
-      cls["comment"] = result["comment"]["value"]
-    else:
-      cls["comment"] = '-'
-    json.append(cls)
-  json.append({'uri': 'http://purl.org/dc/terms/Thing' , 'onto':'http://purl.org/dc/terms/', 'label':'Thing', 'comment':'A blank class'})
-  return JsonResponse({'rs':json}, safe=False)
- 
-def getProperties(request):
-    results = query("""SELECT DISTINCT ?uri ?label ?comment ?domain ?domain_label ?range 
-    WHERE 
-         { 
-              ?uri  rdf:type     owl:DatatypeProperty    .
-              ?uri  rdfs:domain     ?domain    . 
-              ?domain  rdfs:label     ?domain_label    . 
-              ?uri  rdfs:range     ?range    .               
-               OPTIONAL {  
-                   ?uri    rdfs:label  ?label .
-                   FILTER (lang(?label) = "" || lang(?label) = "en") 
-               } 
-               OPTIONAL {  
-                   ?uri  rdfs:comment   ?comment .
-                  FILTER (lang(?comment) = "" || lang(?comment) = "en" ) 
-               } 
-         } 
-    ORDER BY ASC(?label) """)
-    json = []
-    for result in results["results"]["bindings"]:        
-        on = {'uri':result["uri"]["value"], 'label':result["label"]["value"], 'domain':result["domain"]["value"], 'domain_label':result["domain_label"]["value"], 'range':result["range"]["value"] }
-        if result.get("comment"):
-            on['comment'] = result["comment"]["value"]
-        else:
-            on['comment'] = '-'
-        if result.get("label"):
-            on['label'] = result["label"]["value"]
-        else:
-            on['label'] = '-'    
-        json.append(on)
-    return JsonResponse({'result':json} , safe=False)
-

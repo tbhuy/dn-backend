@@ -19,21 +19,22 @@ from dn import views
 
 urlpatterns = [
 
-    path('api/onto', views.getOntologies, name='onto'),
-    path('api/classes', views.getClasses, name='classes'),
-    path('api/props', views.getDataProps, name='props'),
+    path('api/onto', views.get_ontologies, name='onto'),
+    path('api/classes', views.get_classes, name='classes'),
+    path('api/props', views.get_data_props, name='props'),
     #path('onto/load', views.load, name='index'),
     path('dataset', views.new_dataset, name='new_dataset'),
-    path('api/agent', views.agent, name='agent'),
+    path('api/agent', views.get_agent, name='agent'),
     path('api/pub', views.pub, name='pub'),
     path('api/work', views.work, name='work'),
-    path('api/format', views.format, name='format'),
-    path('api/operation', views.operation, name='operation'),
+    path('api/format', views.get_formats, name='format'),
+    path('api/operation', views.get_operations, name='operation'),
     path('api/download', views.download_file, name='download'),
-    path('api/stat_subj', views.stat_subj, name='stat_subj'),
+    path('api/stat_subj', views.get_stat_subj, name='stat_subj'),
     path('api/list_recents', views.list_recents, name='list_recents'),
     path('api/loc', views.loc, name='loc'),    
-    path('api/stat_key', views.stat_key, name='stat_key'),
-    path('api/instance', views.instance, name='instance'),
+    path('api/stat_key', views.get_stat_key, name='stat_key'),
+    path('api/instance', views.get_instance, name='instance'),
     path('api/new_service', views.new_service, name='new_service'),
+    path('api/datasets', views.get_datasets, name='get_datasets')
 ]
