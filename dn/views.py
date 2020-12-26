@@ -22,6 +22,19 @@ def query(str):
     results = sparql.query().convert()
     return results
 
+def query_KB(request):
+    results = query(request.GET.get('query'))
+    json = []
+    rec = {}
+    for result in results["results"]["bindings"]:
+      rec = {}
+      for label in results["head"]["vars"]:
+        rec[label] = result[label]["value"]
+      json.append(rec)
+   
+    return JsonResponse({'rs':json}, safe=False) 
+
+
 def download_file(request):
     file_name = request.GET.get('fn')
     file_path = os.path.join(settings.BASE_DIR, 'public',  'static', 'scripts')
