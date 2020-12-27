@@ -38,4 +38,6 @@ urlpatterns = [
     path('api/new_service', views.new_service, name='new_service'),
     path('api/datasets', views.get_datasets, name='get_datasets'),
     path('api/query', views.query_KB, name='query'),
+    path('api/service', views.get_services, name='service'),
+    path('api/distribution', views.get_distribution, name='distribution'),
 ]

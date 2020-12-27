@@ -5,6 +5,7 @@ from SPARQLWrapper import SPARQLWrapper, JSON, POST, DIGEST, INSERT, BASIC
 import requests
 import time
 import os
+import urllib
 import subprocess
 from django.conf import settings
 import sys
@@ -22,7 +23,9 @@ def query(str):
     results = sparql.query().convert()
     return results
 
+@csrf_exempt
 def query_KB(request):
+   
     results = query(request.GET.get('query'))
     json = []
     rec = {}
@@ -177,6 +180,44 @@ def download(request, path):
             response['Content-Disposition'] = 'inline; filename=' + os.path.basename(file_path)
             return response
     raise Http404
+
+def get_services(request):  
+  results = query("""
+  PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>
+  select ?uri ?name ?desc ?input ?output ?operation where {{ 
+	?uri a dn:Service.
+  ?uri dn:description ?desc.
+  ?uri dn:name ?name.
+  ?uri dn:hasInputFormat ?if.
+  ?if rdfs:label ?input.
+  ?uri dn:hasOutputFormat ?of.
+  ?of rdfs:label ?output.
+  ?uri dn:performsOperation ?op.
+  ?op rdfs:label ?operation.
+  }}""".format())  
+  json = []
+  rec = {}
+  for result in results["results"]["bindings"]:
+    rec = {}
+    for label in results["head"]["vars"]:
+      rec[label] = result[label]["value"]
+    json.append(rec)
+   
+  return JsonResponse({'rs':json}, safe=False) 
+
+def get_distribution(request):  
+  results = query("""PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>
+  PREFIX dcat: <http://www.w3.org/ns/dcat#>
+  select ?format ?download where {{ 
+	<{}> dn:hasFormat ?fm.
+  <{}> dcat:downloadURL ?download.
+  ?fm rdfs:label ?format.
+  }}""".format(request.GET.get('uri'),request.GET.get('uri')))  
+  json = []
+  for result in results["results"]["bindings"]:
+    json.append({'format':result["format"]["value"], 'download': result["download"]["value"]})   
+  return JsonResponse({'rs':json}, safe=False)
+
 
 def pub(request):  
   results = query("""
@@ -488,7 +529,8 @@ def new_service(request):
     triples = []    
     triples.append("{} a dn:Service.".format(uri))
     triples.append("{} dn:name \"{}\".".format(uri, request.POST.get('name')))
-    triples.append("{} dn:description \"{}\".".format(uri, request.POST.get('description')))
+    triples.append("{} dn:accessURL \"{}\".".format(uri, fs.url(filename)))
+    triples.append("{} dn:description \"{}\".".format(uri, request.POST.get('desc')))
     triples.append("{} dn:performsOperation <{}>.".format(uri,  operation))
     triples.append("{} dn:hasInputFormat <{}>.".format(uri,  input_format))
     triples.append("{} dn:hasOutputFormat <{}>.".format(uri,  output_format))
@@ -497,7 +539,7 @@ def new_service(request):
     
     print("\n ".join(triples))
     insertData("\n ".join(prefixes), "\n ".join(triples))  
-    return JsonResponse({'result':{'rs':'ok'}} , safe=False)
+    return JsonResponse({'result':'ok'} , safe=False)
 
 
 def new_dataset(request):  
