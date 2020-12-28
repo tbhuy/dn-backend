@@ -46,11 +46,12 @@ def download_file(request):
     response['Content-Disposition'] = 'attachment; filename="'+ file_name+ '"'
     return response
 
+@csrf_exempt
 def  upload_distribution(request):  
     file_uploaded = request.FILES.get('file_uploaded')
-    pid = request.data.get('pid')
-    uri = request.data.get('uri')
-    id = request.data.get('id')
+    pid = request.POST.get('pid')
+    uri = request.POST.get('uri')
+    id = request.POST.get('id')
     r = requests.post("http://localhost:8085/api/datasets/:persistentId/add?persistentId="+pid, files={'file': file_uploaded}, data={"description":"Initial file"}, headers={ 'X-Dataverse-key': '9cc13e11-6ac8-42bc-8dc5-28a0c4e622da'})
     
       #{"status":"OK","data":{"files":[{"description":"","label":"dcat.csv","restricted":false,"version":1,"datasetVersionId":13,"dataFile":{"id":22,"persistentId":"","pidURL":"","filename":"dcat.csv","contentType":"text/csv","filesize":10887,"description":"","storageIdentifier":"local://175e1e0e2b5-68f3d93a8f1d","rootDataFileId":-1,"md5":"60e5abb7a8c9207456490df444659211","checksum":{"type":"MD5","value":"60e5abb7a8c9207456490df444659211"},"creationDate":"2020-11-19"}}]}}
@@ -74,9 +75,9 @@ def  upload_distribution(request):
         triples.append("{} dct:issued \"{}\"^^xsd:date.".format(dis, rs.get("creationDate")))        
         #print(triples)
         insertData("\n ".join(prefixes), "\n ".join(triples))
-        return Response("ok")
+        return HttpResponse("ok")
     else:
-        return Response("failed")     
+        return HttpResponse("failed")     
 
 def createDataset(datajson):    
     #curl -H "X-Dataverse-key:xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" -X POST "https://demo.dataverse.org/api/dataverses/root/datasets" --upload-file "dataset-finch1.json"
@@ -109,68 +110,50 @@ def insertData(prefixes, triples):
     results = sparql.query()
     return results.response.read()
 
-#Will be replaced by SPARQL queries
 def work(request):
   python_path = sys.executable
+  time.sleep(1)
   ts = round(time.time())
   files_path = os.path.join(settings.BASE_DIR, 'public',  'static', 'scripts')
-  input_file = os.path.join(files_path, request.GET.get('in', ''))
-  print(input_file)
+  input_file = "" if request.GET.get('in', '') == "" else os.path.join(files_path, request.GET.get('in', ''))
+  print("input file: " + input_file)
   uri = request.GET.get('uri', '')
-  print(uri)
-  if uri == "http://melodi.irit.fr/resource/Service/0":
-    return JsonResponse({'rs':{'rs':'ok','file':'synop.202011.csv'}}, safe=False)
-  elif uri == "http://melodi.irit.fr/resource/Service/1":      
-      try:
-        output_file = os.path.join(files_path,  str(ts) + 'rc.csv')
-        subprocess.call(['python3', os.path.join(files_path,  'csv_remove_col.py'), input_file, '3', output_file ])
-        return JsonResponse({'rs':{'rs':'ok','file': str(ts) + 'rc.csv'}}, safe=False)
-      except subprocess.CalledProcessError as e:
-        print(e.returncode)
-        print(e.cmd)
-        print(e.output)
-        return JsonResponse({'rs':{'rs':'error','file': '.csv'}}, safe=False)
-  elif uri == "http://melodi.irit.fr/resource/Service/2":
-      
-      try:
-        output_file = os.path.join(files_path,  str(ts) + 'm.csv')
-     
-        subprocess.call(['python3', os.path.join(files_path, 'csv_mean.py'),   input_file , output_file])
-        return JsonResponse({'rs':{'rs':'ok','file': str(ts) + 'm.csv'}}, safe=False)
-      except subprocess.CalledProcessError as e:
-        print(e.returncode)
-        print(e.cmd)
-        print(e.output)
-        return JsonResponse({'rs':{'rs':'ok','file': str(ts) + '.csv'}}, safe=False)
+  print("service: " + uri)
+  q = """
+  PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>
+  select ?url ?output where {{ 
+	<{}> dn:accessURL ?url.
+  OPTIONAL
+  {{
+  <{}> dn:hasOutputFormat ?of.
+  ?of rdfs:label ?output.
+  }}
+  }}""".format(uri, uri)
+  #print(q)
+  results = query(q)  
   
-  elif uri == "http://melodi.irit.fr/resource/Service/3":
-      
-      try:
-        output_file = os.path.join(files_path,  str(ts) + 'p.png')
-      
-        subprocess.call(['python3', os.path.join(files_path, 'csv_plot.py'),  input_file , output_file])
-        return JsonResponse({'rs':{'rs':'ok','file': str(ts) + 'p.png'}}, safe=False)
-      except subprocess.CalledProcessError as e:
-        print(e.returncode)
-        print(e.cmd)
-        print(e.output)
-        return JsonResponse({'rs':{'rs':'ok','file': str(ts) + '.csv'}}, safe=False)
-  
-  elif uri == "http://melodi.irit.fr/resource/Service/4":
-      
-      try:
-        output_file = os.path.join(files_path,  str(ts) + 'f.csv')
-     
-        subprocess.call(['python3', os.path.join(files_path, 'csv_filter.py'),  input_file , '07005', output_file])
-        return JsonResponse({'rs':{'rs':'ok','file': str(ts) + 'f.csv'}}, safe=False)
-      except subprocess.CalledProcessError as e:
-        print(e.returncode)
-        print(e.cmd)
-        print(e.output)
-        return JsonResponse({'rs':{'rs':'ok','file': str(ts) + '.csv'}}, safe=False)
-  
-  else:
-      return JsonResponse({'rs':{'rs':'error','file':''}}, safe=False)
+  url = results["results"]["bindings"][0]["url"]["value"]
+  print("url: " + url)
+  out_format = "" if not results["results"]["bindings"][0].get("output") else ("." + results["results"]["bindings"][0]["output"]["value"])
+  params = "" if request.GET.get('params') == "None" else request.GET.get('params')
+  output_file = os.path.join(files_path,  str(ts) + out_format)
+  print("output file:" + output_file)
+  call = ["python3", url]
+  if input_file != "": 
+    call.append(input_file)
+  if params != "":
+    call.extend(params.split(" "))
+  call.append(output_file)
+  print(params)
+  try:  
+    subprocess.call(call)
+    return JsonResponse({'rs':{'rs':'OK','file': str(ts) + out_format}}, safe=False)
+  except subprocess.CalledProcessError as e:
+    print(e.returncode)
+    print(e.cmd)
+    print(e.output)
+    return JsonResponse({'rs':{'rs':'Error','file': 'None'}}, safe=False)
+
   
 def download(request, path):
     file_path = os.path.join(BASE_DIR, 'static')
@@ -541,7 +524,7 @@ def new_service(request):
     insertData("\n ".join(prefixes), "\n ".join(triples))  
     return JsonResponse({'result':'ok'} , safe=False)
 
-
+@csrf_exempt
 def new_dataset(request):  
     data = json.loads(request.body)
     prefixes = []

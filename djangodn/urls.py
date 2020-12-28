@@ -40,4 +40,5 @@ urlpatterns = [
     path('api/query', views.query_KB, name='query'),
     path('api/service', views.get_services, name='service'),
     path('api/distribution', views.get_distribution, name='distribution'),
+    path('distribution', views.upload_distribution, name='up_distribution'),
 ]
