@@ -201,6 +201,35 @@ def get_distribution(request):
     json.append({'format':result["format"]["value"], 'download': result["download"]["value"]})   
   return JsonResponse({'rs':json}, safe=False)
 
+def get_claims(request):  
+  results = query("""
+       PREFIX bibo: <http://purl.org/ontology/bibo/>
+  PREFIX dct: <http://purl.org/dc/terms/>
+  select ?uri ?title ?date where {
+	?uri a bibo:Document.
+  ?uri dct:title ?title.
+  ?uri dct:issued ?date
+  }
+  """)  
+  json = []
+  for result in results["results"]["bindings"]:
+    json.append({'uri':result["uri"]["value"], 'title': result["title"]["value"], 'date': result["date"]["value"]})   
+  return JsonResponse({'rs':json}, safe=False)
+
+def pubs(request):  
+  results = query("""
+       PREFIX bibo: <http://purl.org/ontology/bibo/>
+  PREFIX dct: <http://purl.org/dc/terms/>
+  select ?uri ?title ?date where {
+	?uri a bibo:Document.
+  ?uri dct:title ?title.
+  ?uri dct:issued ?date
+  }
+  """)  
+  json = []
+  for result in results["results"]["bindings"]:
+    json.append({'uri':result["uri"]["value"], 'title': result["title"]["value"], 'date': result["date"]["value"]})   
+  return JsonResponse({'rs':json}, safe=False)
 
 def pub(request):  
   results = query("""
@@ -214,6 +243,25 @@ def pub(request):
   for result in results["results"]["bindings"]:
     json.append({'uri':result["uri"]["value"], 'title': result["title"]["value"]})   
   return JsonResponse({'rs':json}, safe=False)
+
+def get_all_datasets (request):
+  results = query("""  PREFIX dc: <http://purl.org/dc/elements/1.1/>
+  PREFIX dct: <http://purl.org/dc/terms/>
+  PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>
+  select * where { 
+	?dn a  dn:Dataset.
+    ?dn dct:issued ?date.
+    ?dn dct:title ?title.
+    ?dn dct:description ?desc.
+    ?dn dn:hasSubject ?subj.
+    ?subj dn:name ?subj_name.
+  } order by DESC(?date)   
+    """)
+  
+  json = []
+  for result in results["results"]["bindings"]:
+    json.append({'uri':result["dn"]["value"], 'title':result["title"]["value"], 'description': result["desc"]["value"], 'issued': result["date"]["value"], 'subject': result["subj_name"]["value"]})
+  return JsonResponse({'rs':json}, safe=False) 
 
 def list_recents(request):
   results = query("""  PREFIX dc: <http://purl.org/dc/elements/1.1/>
