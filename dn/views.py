@@ -191,14 +191,18 @@ def get_services(request):
 def get_distribution(request):  
   results = query("""PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>
   PREFIX dcat: <http://www.w3.org/ns/dcat#>
-  select ?format ?download where {{ 
+   PREFIX dct: <http://purl.org/dc/terms/>
+  select ?format ?download ?size ?title where {{ 
 	<{}> dn:hasFormat ?fm.
+  <{}> dcat:byteSize ?size.
+  ?ds dcat:distribution <{}>.
+  ?ds dct:title ?title.
   <{}> dcat:downloadURL ?download.
   ?fm rdfs:label ?format.
-  }}""".format(request.GET.get('uri'),request.GET.get('uri')))  
+  }}""".format(request.GET.get('uri'), request.GET.get('uri'), request.GET.get('uri'),request.GET.get('uri')))  
   json = []
   for result in results["results"]["bindings"]:
-    json.append({'format':result["format"]["value"], 'download': result["download"]["value"]})   
+    json.append({'size':result["size"]["value"], 'title':result["title"]["value"], 'format':result["format"]["value"], 'download': result["download"]["value"]})   
   return JsonResponse({'rs':json}, safe=False)
 
 def get_claims(request):  
@@ -244,7 +248,7 @@ def pub(request):
     json.append({'uri':result["uri"]["value"], 'title': result["title"]["value"]})   
   return JsonResponse({'rs':json}, safe=False)
 
-def get_all_datasets (request):
+def get_datasets (request):
   results = query("""  PREFIX dc: <http://purl.org/dc/elements/1.1/>
   PREFIX dct: <http://purl.org/dc/terms/>
   PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>
@@ -343,11 +347,11 @@ def get_operations(request):
    
     return JsonResponse({'rs':json}, safe=False)  
 
-def get_datasets(request):
+def get_dataset(request):
   if request.GET.get("search") == "title":
-    filter = 'FILTER regex(str(?title), "' + request.GET.get('value')+ '")'
+    filter = 'FILTER regex(str(?title), "' + request.GET.get('value')+ '", "i")'
   elif request.GET.get("search") == "keyword":
-    filter = 'FILTER regex(str(?keyword), "' + request.GET.get('value')+ '")'
+    filter = 'FILTER regex(str(?keyword), "' + request.GET.get('value')+ '" , "i")'
 
   results = query("""PREFIX dc: <http://purl.org/dc/elements/1.1/>
   PREFIX dct: <http://purl.org/dc/terms/>
@@ -405,13 +409,36 @@ def get_formats(request):
    
     return JsonResponse({'rs':json}, safe=False)
 
+def get_agents(request):
+    results = query(""" PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+        SELECT ?uri ?name ?email 
+        WHERE {{
+           ?uri a foaf:Agent.
+           ?uri foaf:name ?name.     
+        OPTIONAL
+          {{
+            ?uri foaf:email ?email.
+          }}
+        }}""")        
+  
+    json = []
+    for result in results["results"]["bindings"]:
+        ins ={'uri':result["uri"]["value"], 'name': result["name"]["value"]}
+        
+        if result.get("email"):
+            ins['email'] = result["email"]["value"]
+        else:
+            ins['email'] = '-'   
+        json.append(ins)
+    return JsonResponse({'rs':json}, safe=False)
+
 def get_agent(request):
     results = query(""" PREFIX foaf: <http://xmlns.com/foaf/0.1/>
         SELECT ?uri ?name ?email 
         WHERE {{
            ?uri a foaf:Agent.
            ?uri foaf:name ?name. 
-           FILTER regex(str(?name), "{}") .
+           FILTER regex(str(?name), "{}",  "i") .
           OPTIONAL
           {{
             ?uri foaf:email ?email.
@@ -431,24 +458,58 @@ def get_agent(request):
     return JsonResponse({'rs':json}, safe=False)
 
 def get_data_props(request):
-    results = query(""" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> 
-        SELECT ?uri ?label ?comment ?domain ?range ?domainLabel
-        WHERE {
-        
+  classes = []
+  results = query(""" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> 
+        SELECT ?uri ?label ?comment ?onto
+        WHERE {{
+           <{}> a ?uri.           
            ?uri rdfs:label ?label.
            FILTER (lang(?label)= "en" || lang(?label)="") 
         OPTIONAL
-           {
+           {{
            ?uri rdfs:comment ?comment.
            FILTER (lang(?comment)= "en" || lang(?comment)="")
-           }
-        ?uri rdfs:domain ?domain.
-        ?domain rdfs:label ?domainLabel.
-        ?uri rdfs:range ?range.
-        } order by ?label""")      
+           }}
+        ?uri rdfs:isDefinedBy ?onto.
+        }}""".format(request.GET.get('uri')))
+        
+  
+  
+  for result in results["results"]["bindings"]:
+    cls = {'uri':result["uri"]["value"], 'onto':result["onto"]["value"]}
+    if result.get("label"):
+      cls['label'] = result["label"]["value"]
+    else:
+      cls['label'] = ''
+    if result.get("comment"):
+      cls["comment"] = result["comment"]["value"]
+    else:
+      cls["comment"] = '-'
+    classes.append(cls)
+
+ 
+  classes.append({'uri':'http://www.w3.org/2000/01/rdf-schema#Resource', 'onto':'http://www.w3.org/2000/01/rdf-schema#', 'label':'Resource', 'comment':'The class resource, everything'})
+  classes.append({'uri':'http://www.w3.org/2002/07/owl#Thing', 'onto':' http://www.w3.org/2002/07/owl#', 'label':'Thing', 'comment':'The class of OWL individuals'})
+  
+  for clss in classes:
+
     json = []
+    results = query(""" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> 
+        SELECT ?uri ?label ?comment ?range
+        WHERE {{
+           ?uri rdfs:domain <{}>.       
+           ?uri rdfs:label ?label.
+           FILTER (lang(?label)= "en" || lang(?label)="") 
+        OPTIONAL
+           {{
+           ?uri rdfs:comment ?comment.
+           FILTER (lang(?comment)= "en" || lang(?comment)="")
+           }}
+        ?uri rdfs:range ?range.
+        }} order by ?label""".format(clss["uri"]))  
+    
     for result in results["results"]["bindings"]:
-        cls = {'uri':result["uri"]["value"], 'domain':result["domain"]["value"], 'range':result["range"]["value"], 'domainLabel':result["domainLabel"]["value"]}
+        cls = {'uri':result["uri"]["value"],  'range':result["range"]["value"]}
         if result.get("label"):
             cls['label'] = result["label"]["value"]
         else:
@@ -459,7 +520,12 @@ def get_data_props(request):
             cls["comment"] = '-'
         json.append(cls)
 
+    clss["props"] = json
+    
+ 
 
+    #load props for dcterms
+    json = []
     results = query(""" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> 
         SELECT ?uri ?label ?comment  ?range
         WHERE {      
@@ -477,7 +543,7 @@ def get_data_props(request):
       #FILTER(?range = <http://www.w3.org/2000/01/rdf-schema#Literal>)      
   
     for result in results["results"]["bindings"]:
-        cls = {'uri':result["uri"]["value"], 'domain':'http://purl.org/dc/terms/Thing', 'range':result["range"]["value"], 'domainLabel':'Thing'}
+        cls = {'uri':result["uri"]["value"], 'range':result["range"]["value"]}
         if result.get("label"):
             cls['label'] = result["label"]["value"]
         else:
@@ -486,24 +552,28 @@ def get_data_props(request):
             cls["comment"] = result["comment"]["value"]
         else:
             cls["comment"] = '-'
-
         json.append(cls)
-    return JsonResponse({'rs':json}, safe=False)
+
+  json.append({'uri':'http://www.w3.org/1999/02/22-rdf-syntax-ns#type','label':'type', 'comment':'The subject is an instance of a class', 'range':'rdfs:Class'})
+
+  classes.append({'uri': 'http://purl.org/dc/terms/Thing' , 'onto':'http://purl.org/dc/terms/', 'label':'Thing', 'comment':'A blank class', 'props':json})
+        
+  return JsonResponse({'rs':classes}, safe=False)
 
 def get_classes(request):
   results = query(""" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> 
         SELECT ?uri ?label ?comment ?onto
-        WHERE {
-           ?uri rdf:type owl:Class .
+        WHERE {{
+           <{}> a ?uri.           
            ?uri rdfs:label ?label.
            FILTER (lang(?label)= "en" || lang(?label)="") 
         OPTIONAL
-           {
+           {{
            ?uri rdfs:comment ?comment.
            FILTER (lang(?comment)= "en" || lang(?comment)="")
-           }
+           }}
         ?uri rdfs:isDefinedBy ?onto.
-        } order by ?label""")
+        }}""".format(request.GET.get('uri')))
         
   json = []
   for result in results["results"]["bindings"]:
@@ -517,7 +587,10 @@ def get_classes(request):
     else:
       cls["comment"] = '-'
     json.append(cls)
+
   json.append({'uri': 'http://purl.org/dc/terms/Thing' , 'onto':'http://purl.org/dc/terms/', 'label':'Thing', 'comment':'A blank class'})
+  json.append({'uri':'http://www.w3.org/2000/01/rdf-schema#Resource', 'onto':'http://www.w3.org/2000/01/rdf-schema#', 'label':'Resource', 'comment':'The class resource, everything'})
+  json.append({'uri':' http://www.w3.org/2002/07/owl#Thing', 'onto':' http://www.w3.org/2002/07/owl#', 'label':'Thing', 'comment':'The class of OWL individuals'})
   return JsonResponse({'rs':json}, safe=False)
 
 def get_ontologies(request):

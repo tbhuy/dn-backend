@@ -20,14 +20,15 @@ from dn import views
 urlpatterns = [
 
     path('api/onto', views.get_ontologies, name='ontologies'),
-    path('api/all_datasets', views.get_all_datasets, name='all_datasets'),
+    path('api/datasets', views.get_datasets, name='datasets'),
     path('api/classes', views.get_classes, name='classes'),
     path('api/props', views.get_data_props, name='props'),
     path('api/claims', views.get_claims, name='claims'),
-    path('dataset', views.new_dataset, name='new_dataset'),
+    path('api/new_dataset', views.new_dataset, name='new_dataset'),
     path('api/agent', views.get_agent, name='agent'),
+    path('api/agents', views.get_agents, name='agents'),
     path('api/pub', views.pub, name='pub'),
-    path('api/pubs', views.pubs, name='pubs'),
+    path('api/publications', views.pubs, name='pubs'),
     path('api/work', views.work, name='work'),
     path('api/format', views.get_formats, name='format'),
     path('api/operation', views.get_operations, name='operation'),
@@ -43,5 +44,5 @@ urlpatterns = [
     path('api/service', views.get_services, name='service'),
     path('api/services', views.get_services, name='services'),
     path('api/distribution', views.get_distribution, name='distribution'),
-    path('distribution', views.upload_distribution, name='up_distribution'),
+    path('api/new_distribution', views.upload_distribution, name='new_distribution'),
 ]
