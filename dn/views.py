@@ -14,10 +14,11 @@ from django.core.files.storage import FileSystemStorage
 from django.http import FileResponse
 from django.views.decorators.csrf import csrf_exempt
 
-url = "http://172.17.0.4:7200/repositories/dn"
+graphdb = "http://172.17.0.4:7200/repositories/dn"
+dataverse = "http://localhost:8085"
 
 def query(str):
-    sparql = SPARQLWrapper(url)
+    sparql = SPARQLWrapper(graphdb)
     sparql.setReturnFormat(JSON)
     sparql.setQuery(str)        
     results = sparql.query().convert()
@@ -52,7 +53,7 @@ def  upload_distribution(request):
     pid = request.POST.get('pid')
     uri = request.POST.get('uri')
     id = request.POST.get('id')
-    r = requests.post("http://localhost:8085/api/datasets/:persistentId/add?persistentId="+pid, files={'file': file_uploaded}, data={"description":"Initial file"}, headers={ 'X-Dataverse-key': '9cc13e11-6ac8-42bc-8dc5-28a0c4e622da'})
+    r = requests.post(dataverse + "/api/datasets/:persistentId/add?persistentId="+pid, files={'file': file_uploaded}, data={"description":"Initial file"}, headers={ 'X-Dataverse-key': '9cc13e11-6ac8-42bc-8dc5-28a0c4e622da'})
     
       #{"status":"OK","data":{"files":[{"description":"","label":"dcat.csv","restricted":false,"version":1,"datasetVersionId":13,"dataFile":{"id":22,"persistentId":"","pidURL":"","filename":"dcat.csv","contentType":"text/csv","filesize":10887,"description":"","storageIdentifier":"local://175e1e0e2b5-68f3d93a8f1d","rootDataFileId":-1,"md5":"60e5abb7a8c9207456490df444659211","checksum":{"type":"MD5","value":"60e5abb7a8c9207456490df444659211"},"creationDate":"2020-11-19"}}]}}
    
@@ -74,28 +75,17 @@ def  upload_distribution(request):
         triples.append("{} dct:description \"{}\".".format(dis, rs.get("filename")))
         triples.append("{} dct:issued \"{}\"^^xsd:date.".format(dis, rs.get("creationDate")))        
         #print(triples)
-        insertData("\n ".join(prefixes), "\n ".join(triples))
+        insert_data("\n ".join(prefixes), "\n ".join(triples))
         return HttpResponse("ok")
     else:
         return HttpResponse("failed")     
 
-def createDataset(datajson):    
-    #curl -H "X-Dataverse-key:xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" -X POST "https://demo.dataverse.org/api/dataverses/root/datasets" --upload-file "dataset-finch1.json"
-    headers = {
-    'X-Dataverse-key': '9cc13e11-6ac8-42bc-8dc5-28a0c4e622da'  
-    }
-    #print(datajson)
-    r = requests.post("http://localhost:8085/api/dataverses/root/datasets", data=datajson, headers=headers)
-    if r.status_code == 200 or r.status_code == 201:
-        return json.loads(r.text).get("data").get("persistentId")
-    else:
-        return "failed"
+
  
-def insertData(prefixes, triples):
-    url = "http://172.17.0.4:7200/repositories/dn"
-    sparql = SPARQLWrapper(url)
+def insert_data(prefixes, triples): 
+    sparql = SPARQLWrapper(graphdb)
     sparql.setReturnFormat(JSON)
-    sparql = SPARQLWrapper(url+"/statements")
+    sparql = SPARQLWrapper(graphdb +"/statements")
     sparql.setHTTPAuth(DIGEST)
     sparql.setCredentials("admin", "melodi")
     sparql.setMethod(POST)
@@ -105,9 +95,11 @@ def insertData(prefixes, triples):
         {{ 
             {} 
         }}
-        """.format(prefixes, triples)      
+        """.format(prefixes, triples)  
+    print(query)    
     sparql.setQuery(query)
     results = sparql.query()
+    print(results.response.read())
     return results.response.read()
 
 def work(request):
@@ -188,6 +180,23 @@ def get_services(request):
    
   return JsonResponse({'rs':json}, safe=False) 
 
+
+def get_distributions(request):  
+  results = query("""PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>
+  PREFIX dcat: <http://www.w3.org/ns/dcat#>
+   PREFIX dct: <http://purl.org/dc/terms/>
+  select ?uri ?format ?download ?size where {{ 
+  <{}> dcat:distribution ?uri.  
+	?uri dn:hasFormat ?fm.
+  ?uri dcat:byteSize ?size.
+  ?uri dcat:downloadURL ?download.
+  ?fm rdfs:label ?format.
+  }}""".format(request.GET.get('uri')))  
+  json = []
+  for result in results["results"]["bindings"]:
+    json.append({'uri':result["uri"]["value"], 'label':result["uri"]["value"][result["uri"]["value"].rindex('/')+1:] + ", format " + result["format"]["value"] + ", size " + result["size"]["value"] + " bytes", 'download': result["download"]["value"], 'size':result["size"]["value"], 'format':result["format"]["value"]})   
+  return JsonResponse({'rs':json}, safe=False)
+
 def get_distribution(request):  
   results = query("""PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>
   PREFIX dcat: <http://www.w3.org/ns/dcat#>
@@ -205,47 +214,127 @@ def get_distribution(request):
     json.append({'size':result["size"]["value"], 'title':result["title"]["value"], 'format':result["format"]["value"], 'download': result["download"]["value"]})   
   return JsonResponse({'rs':json}, safe=False)
 
+
+def get_claim(request):  
+  results = query("""
+  PREFIX mp:  <http://purl.org/mp/>
+  PREFIX owl: <http://www.w3.org/2002/07/owl#>
+  PREFIX dct: <http://purl.org/dc/terms/>
+  select ?uri ?statement  where {{
+	?uri a mp:Claim.
+  ?uri mp:statement ?statement.
+  ?uri mp:supports ?ref.
+  ?ref owl:sameAs {}.
+  }}
+  """.format(request.GET.get('uri', ''))) 
+
+  json = []
+  for result in results["results"]["bindings"]:
+    json.append({'uri':result["uri"]["value"], 'statement': result["statement"]["value"]})   
+  return JsonResponse({'rs':json}, safe=False)
+
 def get_claims(request):  
   results = query("""
-       PREFIX bibo: <http://purl.org/ontology/bibo/>
+  PREFIX mp:  <http://purl.org/mp/>
+  PREFIX owl: <http://www.w3.org/2002/07/owl#>
   PREFIX dct: <http://purl.org/dc/terms/>
-  select ?uri ?title ?date where {
-	?uri a bibo:Document.
-  ?uri dct:title ?title.
-  ?uri dct:issued ?date
+  select ?uri ?statement ?title where {
+	?uri a mp:Claim.
+  ?uri mp:statement ?statement.
+  ?uri mp:supports ?ref.
+  ?ref owl:sameAs ?pub.
+  ?pub dct:title ?title.
   }
   """)  
   json = []
   for result in results["results"]["bindings"]:
-    json.append({'uri':result["uri"]["value"], 'title': result["title"]["value"], 'date': result["date"]["value"]})   
+    json.append({'uri':result["uri"]["value"], 'statement': result["statement"]["value"], 'publication': result["title"]["value"]})   
   return JsonResponse({'rs':json}, safe=False)
 
-def pubs(request):  
+
+@csrf_exempt
+def new_claim(request):
+  data = json.loads(request.body)
+  prefixes = []
+  prefixes.append("PREFIX mp:  <http://purl.org/mp/>")
+  prefixes.append("PREFIX bibo: <http://purl.org/ontology/bibo/>")
+  prefixes.append("PREFIX owl: <http://www.w3.org/2002/07/owl#>")
+  triples = []
+  uri = data.get('uri').replace("Document", "Reference")
+  id = uri[uri.rindex("/")+1:-1]
+  triples.append("{} a mp:Reference.".format(uri)) 
+  triples.append("{} owl:sameAs {}.".format(uri,  data.get('uri'))) 
+  for st in data.get("statements"):
+    triples.append("<http:melodi.irit.fr/resource/Claim/{}> a mp:Claim.".format(id+str(st["id"])))
+    triples.append("<http:melodi.irit.fr/resource/Claim/{}> mp:supports {}.".format(id+str(st["id"]), uri))
+    triples.append("<http:melodi.irit.fr/resource/Claim/{}> mp:statement \"{}\".".format(id+str(st["id"]), st["value"]))
+ 
+  insert_data("\n ".join(prefixes), "\n ".join(triples))  
+  return JsonResponse({'result':'ok'} , safe=False)
+
+
+
+@csrf_exempt
+def new_pub(request):
+  data = json.loads(request.body)
+  prefixes = []
+  prefixes.append("PREFIX dct: <http://purl.org/dc/terms/>")
+  prefixes.append("PREFIX bibo: <http://purl.org/ontology/bibo/>")
+  triples = []
+  uri = data.get('uri')
+  triples.append("{} a bibo:Document.".format(uri)) 
+  triples.append("{} dct:title \"{}\".".format(uri, data.get("title"))) 
+  triples.append("{} dct:issued \"{}\"^^xsd:date.".format(uri, data.get("issued"))) 
+  triples.append("{} dct:identifier \"{}\".".format(uri, data.get("doi")))  
+  for author in data.get("authors"):
+    triples.append("{} dct:creator {}.".format(uri, author.get("uri")))
+  
+  insert_data("\n ".join(prefixes), "\n ".join(triples))  
+  return JsonResponse({'result':'ok'} , safe=False)
+
+def get_pubs_doi(request):  
+  results = query("""
+  PREFIX bibo: <http://purl.org/ontology/bibo/>
+  PREFIX dct: <http://purl.org/dc/terms/>
+  select ?uri ?title ?doi ?date where {{
+	?uri a bibo:Document.
+  ?uri dct:identifier ?doi.
+  ?uri dct:title ?title.
+  ?uri dct:issued ?date.
+  FILTER regex((str(?doi)), "{}", "i") }}""".format(request.GET.get('doi', ''))) 
+ 
+  json = []
+  for result in results["results"]["bindings"]:
+    json.append({'uri':result["uri"]["value"], 'DOI': result["doi"]["value"],  'title': result["title"]["value"], 'date': result["date"]["value"]})   
+  return JsonResponse({'rs':json}, safe=False)
+
+def get_pubs(request):  
   results = query("""
        PREFIX bibo: <http://purl.org/ontology/bibo/>
   PREFIX dct: <http://purl.org/dc/terms/>
-  select ?uri ?title ?date where {
+  select ?uri ?doi ?title where {
 	?uri a bibo:Document.
   ?uri dct:title ?title.
-  ?uri dct:issued ?date
+  ?uri dct:identifier ?doi.
   }
   """)  
   json = []
   for result in results["results"]["bindings"]:
-    json.append({'uri':result["uri"]["value"], 'title': result["title"]["value"], 'date': result["date"]["value"]})   
+    json.append({'uri':result["uri"]["value"], 'title': result["title"]["value"], 'DOI': result["doi"]["value"]})   
   return JsonResponse({'rs':json}, safe=False)
 
-def pub(request):  
+def get_pubs_title(request):  
   results = query("""
        PREFIX bibo: <http://purl.org/ontology/bibo/>
   PREFIX dct: <http://purl.org/dc/terms/>
-  select ?uri ?title where {{ 
+  select ?uri ?title ?doi where {{ 
 	?uri a bibo:Document.
   ?uri dct:title ?title.
-  FILTER regex(lcase(str(?title)), "{}") }}""".format(request.GET.get('title', '')))  
+  ?uri dct:identifier ?doi.
+  FILTER regex(lcase(str(?title)), "{}", "i") }}""".format(request.GET.get('title', '')))  
   json = []
   for result in results["results"]["bindings"]:
-    json.append({'uri':result["uri"]["value"], 'title': result["title"]["value"]})   
+    json.append({'uri':result["uri"]["value"], 'title': result["title"]["value"], 'doi': result["doi"]["value"]})   
   return JsonResponse({'rs':json}, safe=False)
 
 def get_datasets (request):
@@ -287,7 +376,7 @@ def list_recents(request):
     json.append({'uri':result["dn"]["value"], 'title':result["title"]["value"], 'description': result["desc"]["value"], 'issued': result["date"]["value"], 'subject': result["subj_name"]["value"]})
   return JsonResponse({'rs':json}, safe=False) 
 
-def loc(request):
+def get_loc(request):
     results = query("""  PREFIX dct: <http://purl.org/dc/terms/>
 PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>
 select ?dn ?title ?geom where { 
@@ -308,7 +397,8 @@ def get_stat_key(request):
 PREFIX dcat: <http://www.w3.org/ns/dcat#>
 select ?keyword (count(?keyword) as ?total) where { 
 	?dn a <http://melodi.irit.fr/ontologies/dn/Dataset>.    
-    ?dn dcat:keyword ?keyword.       
+    ?dn dcat:keyword ?keyword. 
+          
 } 
 group by ?keyword""")
   
@@ -615,6 +705,22 @@ def get_ontologies(request):
         json.append(on)
     return JsonResponse({'rs':json}, safe=False)
 
+
+@csrf_exempt
+def new_agent(request):  
+    data = json.loads(request.body)
+    uri = data.get('uri')
+    prefixes = []
+    prefixes.append("PREFIX foaf: <http://xmlns.com/foaf/0.1/>")
+    triples = []    
+    triples.append("{} a foaf:Agent.".format(uri))
+    triples.append("{} foaf:name \"{}\".".format(uri, data.get('name')))
+    if data.get('email') != "":
+      triples.append("{} foaf:email \"{}\".".format(uri, data.get('email'))) 
+    insert_data("\n ".join(prefixes), "\n ".join(triples))  
+    return JsonResponse({'result':'ok'} , safe=False)
+
+
 @csrf_exempt
 def new_service(request):  
     file_uploaded = request.FILES.get('file_uploaded')
@@ -642,7 +748,7 @@ def new_service(request):
     
     
     print("\n ".join(triples))
-    insertData("\n ".join(prefixes), "\n ".join(triples))  
+    insert_data("\n ".join(prefixes), "\n ".join(triples))  
     return JsonResponse({'result':'ok'} , safe=False)
 
 @csrf_exempt
@@ -654,6 +760,9 @@ def new_dataset(request):
     prefixes.append("PREFIX dcat: <http://www.w3.org/ns/dcat#>")
     prefixes.append("PREFIX bibo: <http://purl.org/ontology/bibo/>")
     prefixes.append("PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>")
+    prefixes.append("PREFIX geo: <http://www.opengis.net/ont/geosparql#>")
+    prefixes.append("PREFIX locn: <http://www.w3.org/ns/locn#>")
+    
     triples = []    
     triples.append("{} a dn:Dataset.".format(data.get('uri')))
     triples.append("{} dct:title \"{}\".".format(data.get('uri'), data.get("title")))
@@ -662,35 +771,23 @@ def new_dataset(request):
     triples.append("{} dct:issued \"{}\"^^xsd:date.".format(data.get('uri'), data.get("issuedDate")))
     triples.append("{} dn:note \"{}\".".format(data.get('uri'),  data.get("note")))
     
+    if data.get("loc","") != "":
+      triples.append("{} dct:spatial {}.".format(data.get('uri'), data.get('uri').replace("Dataset","Loc")))
+      triples.append("{} locn:geometry \"{}\"^^geo:wktLiteral.".format(data.get('uri').replace("Dataset","Loc"),  data.get("loc")))
+
+    
     for creator in data.get('creators'):
         triples.append("{} dct:creator {}.".format(data.get('uri'), creator.get("uri")))
-        triples.append("{} a foaf:Agent.".format(creator.get('uri'))) 
-        triples.append("{} foaf:name \"{}\".".format(creator.get('uri'), creator.get("name"))) 
-        triples.append("{} foaf:email \"{}\".".format(creator.get('uri'), creator.get("email")))
     
     for publisher in data.get('publishers'):
         triples.append("{} dct:publisher {}.".format(data.get('uri'), publisher.get("uri")))
-        triples.append("{} a foaf:Agent.".format(publisher.get('uri'))) 
-        triples.append("{} foaf:name \"{}\".".format(publisher.get('uri'), publisher.get("name"))) 
-        triples.append("{} foaf:email \"{}\".".format(publisher.get('uri'), publisher.get("email")))
 
-    depositors = []
     for depositor in data.get('depositors'):        
         triples.append("{} dn:depositor {}.".format(data.get('uri'), depositor.get("uri")))
-        triples.append("{} a foaf:Agent.".format(depositor.get('uri'))) 
-        triples.append("{} foaf:name \"{}\".".format(depositor.get('uri'), depositor.get("name"))) 
-        triples.append("{} foaf:email \"{}\".".format(depositor.get('uri'), depositor.get("email")))
 
     for pub in data.get('pubs'):
-        triples.append("{} dn:usedIn {}.".format(data.get('uri'), pub.get("uri")))
-        triples.append("{} a bibo:Document.".format(pub.get('uri'))) 
-        triples.append("{} dct:title \"{}\".".format(pub.get('uri'), pub.get("title"))) 
-        triples.append("{} dct:issued \"{}\"^^xsd:date.".format(pub.get('uri'), pub.get("issuedDate")))
-        for author in pub.get("authors"):
-            triples.append("{} dct:creator {}.".format(pub.get('uri'), author.get("uri")))
-            triples.append("{} a foaf:Agent.".format(author.get('uri'))) 
-            triples.append("{} foaf:name \"{}\".".format(author.get('uri'), author.get("name"))) 
-            triples.append("{} foaf:email \"{}\".".format(author.get('uri'), author.get("email")))
+        triples.append("{} dn:presentedIn {}.".format(data.get('uri'), pub.get("uri")))
+
 
     #print("\n ".join(triples))
     sub = ["", "Arts and Humanities", "Astronomy and Astrophysics", "Business and Management","Chemistry", "Computer and Information Science","Earth and Environmental Sciences", "Engineering","Law","Mathematical Sciences","Medicine, Health and Life Sciences", "Physics", "Social Sciences", "Other"]
@@ -768,8 +865,19 @@ def new_dataset(request):
   }}                                                                                                                                                                                                                                                            
 }}""".format(data.get("title"), data.get("creators")[0].get("name"), data.get("publishers")[0].get("email"), data.get("publishers")[0].get("name"), data.get("description"), sub[int(data.get("subject"))])
 
-    rs = createDataset(str)
+    rs = ""
+    #curl -H "X-Dataverse-key:xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" -X POST "https://demo.dataverse.org/api/dataverses/root/datasets" --upload-file "dataset-finch1.json"
+    headers = {
+    'X-Dataverse-key': '9cc13e11-6ac8-42bc-8dc5-28a0c4e622da'  
+    }
+    #print(datajson)
+    r = requests.post(dataverse + "/api/dataverses/root/datasets", data=str, headers=headers)
+    if r.status_code == 200 or r.status_code == 201:
+      rs = json.loads(r.text).get("data").get("persistentId")
+    else:
+      rs = "failed"
+
     triples.append("{} dct:identifier \"{}\".".format(data.get('uri'), rs))
-    triples.append("{} dcat:landingPage \"http://localhost:8085/dataset.xhtml?persistentId={}\".".format(data.get('uri'), rs))
-    insertData("\n ".join(prefixes), "\n ".join(triples))
-    return JsonResponse({'result':rs} , safe=False)
+    triples.append("{} dcat:landingPage \"{}/dataset.xhtml?persistentId={}\".".format(data.get('uri'), dataverse, rs))
+    insert_data("\n ".join(prefixes), "\n ".join(triples))
+    return JsonResponse({'doi':rs, 'page': dataverse + '/dataset.xhtml?persistentId=' + rs} , safe=False)
