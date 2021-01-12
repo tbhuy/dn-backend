@@ -18,7 +18,8 @@ from django.urls import path
 from dn import views
 
 urlpatterns = [
-
+    
+    path('api/new-meta', views.new_meta, name='new-meta'),
     path('api/onto', views.get_ontologies, name='ontologies'),
     path('api/datasets', views.get_datasets, name='datasets'),
     path('api/dataset', views.get_dataset, name='dataset'),
@@ -51,4 +52,5 @@ urlpatterns = [
     path('api/distribution', views.get_distribution, name='distribution'),
     path('api/distributions', views.get_distributions, name='distributions'),
     path('api/new-distribution', views.upload_distribution, name='new-distribution'),
+    path('api/preview', views.view_file, name='preview'),
 ]

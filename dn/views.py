@@ -16,6 +16,10 @@ from django.views.decorators.csrf import csrf_exempt
 
 graphdb = "http://172.17.0.4:7200/repositories/dn"
 dataverse = "http://localhost:8085"
+dataverse_ex = "http://localhost:8085" 
+#dataverse = "http://melodi.irit.fr:8080"
+#dataverse_ex = "http://localhost:8085" 
+dv_key = "64d131ba-170e-47f2-abb3-410a86ed91c2"
 
 def query(str):
     sparql = SPARQLWrapper(graphdb)
@@ -47,13 +51,30 @@ def download_file(request):
     response['Content-Disposition'] = 'attachment; filename="'+ file_name+ '"'
     return response
 
+def view_file(request):
+    file_name = request.GET.get('fn')
+    file_path = os.path.join(settings.BASE_DIR, 'public',  'static', 'scripts', file_name)
+    myfile = open(file_path, "r")
+    myline = myfile.readline()
+    data = ""
+    line = 1
+    while myline and line <=10:
+      data = data +  myline
+      myline = myfile.readline()
+      line = line +1
+    myfile.close()  
+
+    return HttpResponse(data)
+
+    
+
 @csrf_exempt
 def  upload_distribution(request):  
     file_uploaded = request.FILES.get('file_uploaded')
     pid = request.POST.get('pid')
     uri = request.POST.get('uri')
     id = request.POST.get('id')
-    r = requests.post(dataverse + "/api/datasets/:persistentId/add?persistentId="+pid, files={'file': file_uploaded}, data={"description":"Initial file"}, headers={ 'X-Dataverse-key': '9cc13e11-6ac8-42bc-8dc5-28a0c4e622da'})
+    r = requests.post(dataverse + "/api/datasets/:persistentId/add?persistentId="+pid, files={'file': file_uploaded}, data={"description":"Initial file"}, headers={ 'X-Dataverse-key': dv_key})
     
       #{"status":"OK","data":{"files":[{"description":"","label":"dcat.csv","restricted":false,"version":1,"datasetVersionId":13,"dataFile":{"id":22,"persistentId":"","pidURL":"","filename":"dcat.csv","contentType":"text/csv","filesize":10887,"description":"","storageIdentifier":"local://175e1e0e2b5-68f3d93a8f1d","rootDataFileId":-1,"md5":"60e5abb7a8c9207456490df444659211","checksum":{"type":"MD5","value":"60e5abb7a8c9207456490df444659211"},"creationDate":"2020-11-19"}}]}}
    
@@ -70,7 +91,7 @@ def  upload_distribution(request):
         triples.append("{} dcat:distribution {}.".format(uri, dis))
         triples.append("{} a dcat:Distribution.".format(dis))
         triples.append("{} dcat:byteSize {}.".format(dis, rs.get("filesize")))
-        triples.append("{} dcat:downloadURL \"http://localhost:8085/api/access/datafile/{}\".".format(dis, rs.get("id")))
+        triples.append("{} dcat:downloadURL \"{}/api/access/datafile/{}\".".format(dis, dataverse_ex, rs.get("id")))
         triples.append("{} dcat:mediaType \"{}\".".format(dis, rs.get("contentType")))
         triples.append("{} dct:description \"{}\".".format(dis, rs.get("filename")))
         triples.append("{} dct:issued \"{}\"^^xsd:date.".format(dis, rs.get("creationDate")))        
@@ -550,7 +571,7 @@ def get_agent(request):
 def get_data_props(request):
   classes = []
   results = query(""" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> 
-        SELECT ?uri ?label ?comment ?onto
+        SELECT distinct ?uri ?label ?comment ?onto
         WHERE {{
            <{}> a ?uri.           
            ?uri rdfs:label ?label.
@@ -585,9 +606,9 @@ def get_data_props(request):
 
     json = []
     results = query(""" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> 
-        SELECT ?uri ?label ?comment ?range
+        SELECT distinct ?uri ?label ?comment ?range 
         WHERE {{
-           ?uri rdfs:domain <{}>.       
+           ?uri rdfs:domain <{}>.               
            ?uri rdfs:label ?label.
            FILTER (lang(?label)= "en" || lang(?label)="") 
         OPTIONAL
@@ -599,7 +620,7 @@ def get_data_props(request):
         }} order by ?label""".format(clss["uri"]))  
     
     for result in results["results"]["bindings"]:
-        cls = {'uri':result["uri"]["value"],  'range':result["range"]["value"]}
+        cls = {'uri':result["uri"]["value"], 'range':result["range"]["value"]}
         if result.get("label"):
             cls['label'] = result["label"]["value"]
         else:
@@ -654,7 +675,8 @@ def get_classes(request):
   results = query(""" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> 
         SELECT ?uri ?label ?comment ?onto
         WHERE {{
-           <{}> a ?uri.           
+           <{}> a ?uri.
+
            ?uri rdfs:label ?label.
            FILTER (lang(?label)= "en" || lang(?label)="") 
         OPTIONAL
@@ -704,6 +726,20 @@ def get_ontologies(request):
             on['description'] = '-'    
         json.append(on)
     return JsonResponse({'rs':json}, safe=False)
+
+
+@csrf_exempt
+def new_meta(request):  
+    data = json.loads(request.body)
+    uri = data.get('uri')
+    triples = []    
+    for meta in data.get("meta"):
+      if "literal" in meta.get("range").lower():
+        triples.append("<{}> <{}> {}.".format(uri, meta.get("uri"), meta.get("value")))
+      else:
+        triples.append("<{}> <{}> <{}>.".format(uri, meta.get("uri"), meta.get("value")))
+    insert_data("","\n ".join(triples))  
+    return JsonResponse({'result':'ok'} , safe=False)
 
 
 @csrf_exempt
@@ -868,16 +904,19 @@ def new_dataset(request):
     rs = ""
     #curl -H "X-Dataverse-key:xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" -X POST "https://demo.dataverse.org/api/dataverses/root/datasets" --upload-file "dataset-finch1.json"
     headers = {
-    'X-Dataverse-key': '9cc13e11-6ac8-42bc-8dc5-28a0c4e622da'  
+    'X-Dataverse-key': dv_key 
     }
     #print(datajson)
     r = requests.post(dataverse + "/api/dataverses/root/datasets", data=str, headers=headers)
+    print(str)
+    print(r.content)
+    print(r.status_code)
     if r.status_code == 200 or r.status_code == 201:
       rs = json.loads(r.text).get("data").get("persistentId")
     else:
       rs = "failed"
 
     triples.append("{} dct:identifier \"{}\".".format(data.get('uri'), rs))
-    triples.append("{} dcat:landingPage \"{}/dataset.xhtml?persistentId={}\".".format(data.get('uri'), dataverse, rs))
+    triples.append("{} dcat:landingPage \"{}/dataset.xhtml?persistentId={}\".".format(data.get('uri'), dataverse_ex, rs))
     insert_data("\n ".join(prefixes), "\n ".join(triples))
-    return JsonResponse({'doi':rs, 'page': dataverse + '/dataset.xhtml?persistentId=' + rs} , safe=False)
+    return JsonResponse({'doi':rs, 'page': dataverse_ex + '/dataset.xhtml?persistentId=' + rs} , safe=False)
