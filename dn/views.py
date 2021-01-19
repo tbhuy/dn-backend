@@ -21,6 +21,47 @@ dataverse_ex = "http://localhost:8085"
 #dataverse_ex = "http://localhost:8085" 
 dv_key = "64d131ba-170e-47f2-abb3-410a86ed91c2"
 
+def import_meta(request):
+  ds_id = request.GET.get('id') 
+  ts = round(time.time()*1000)
+  resp = requests.get('https://www.data.gouv.fr/api/1/datasets/' + str(ds_id))
+  ds = resp.json()  
+  triples = []   
+  prefixes = []
+  prefixes.append("PREFIX dct: <http://purl.org/dc/terms/>")
+  prefixes.append("PREFIX foaf: <http://xmlns.com/foaf/0.1/>")
+  prefixes.append("PREFIX dcat: <http://www.w3.org/ns/dcat#>")
+  prefixes.append("PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>")
+  prefixes.append("PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>") 
+   
+  ds_uri = "<http://melodi.irit.fr/resource/Dataset/dn_"+ str(ts) + ">"
+  dis_uri = ds_uri.replace("Dataset","Distribution")
+  triples.append("{} a dn:Dataset.".format(ds_uri))
+  triples.append("{} dcat:landingPage \"{}\".".format(ds_uri, ds.get("page")))
+  triples.append("{} dct:identifier \"{}\".".format(ds_uri, ds.get("id")))
+  triples.append("{} dn:hasSubject <http://melodi.irit.fr/resource/Subject/99>.".format(ds_uri))
+  triples.append("{} dct:title \"{}\".".format(ds_uri, ds.get("title")))
+  triples.append("{} dct:description \"\"\"{}\"\"\".".format(ds_uri, ds.get("description")))
+  triples.append("{} dcat:distribution {}.".format(ds_uri, dis_uri))
+  triples.append("{} a dn:Distribution.".format(dis_uri))
+  triples.append("{} dcat:accessURL \"{}\".".format(dis_uri, ds.get("resources")[0].get("url")))
+  print( ds.get("resources")[0].get("filesize", 0))
+  if ds.get("resources")[0].get("filesize"):
+    triples.append("{} dcat:byteSize {}.".format(dis_uri, ds.get("resources")[0].get("filesize", 0))) 
+  triples.append("{} dct:identidier \"{}\".".format(dis_uri, ds.get("resources")[0].get("id"))) 
+  triples.append("{} dcat:mediaType \"{}\".".format(dis_uri, ds.get("resources")[0].get("mime")))
+  triples.append("{} dct:license \"{}\".".format(ds_uri, ds.get("license")))
+  triples.append("{} dct:issued \"{}\"^^xsd:dateTime.".format(ds_uri, ds.get("created_at")))    
+  for kw in ds.get("tags"):
+    triples.append("{} dcat:keyword \"{}\".".format(ds_uri, kw))
+
+  
+  insert_data("\n ".join(prefixes), "\n ".join(triples))
+  return HttpResponse("ok")
+
+   
+  
+
 def query(str):
     sparql = SPARQLWrapper(graphdb)
     sparql.setReturnFormat(JSON)
