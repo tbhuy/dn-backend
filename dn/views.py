@@ -20,12 +20,17 @@ dataverse_ex = "http://localhost:8085"
 #dataverse = "http://melodi.irit.fr:8080"
 #dataverse_ex = "http://localhost:8085" 
 dv_key = "9cc13e11-6ac8-42bc-8dc5-28a0c4e622da"
-
+site = {}
+site['data.gouv.fr'] = 'https://www.data.gouv.fr/api/1/datasets/'
+site['dataverse.ird.fr'] = 'https://dataverse.ird.fr/api/datasets/:persistentId/?persistentId='
 
 def import_meta(request):
+
   ds_id = request.GET.get('id') 
+  ds_site = site.get(request.GET.get('site'))
+
   ts = round(time.time()*1000)
-  resp = requests.get('https://www.data.gouv.fr/api/1/datasets/' + str(ds_id))
+  resp = requests.get(ds_site + str(ds_id))
   ds = resp.json()  
   triples = []   
   prefixes = []
@@ -33,30 +38,51 @@ def import_meta(request):
   prefixes.append("PREFIX foaf: <http://xmlns.com/foaf/0.1/>")
   prefixes.append("PREFIX dcat: <http://www.w3.org/ns/dcat#>")
   prefixes.append("PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>")
-  prefixes.append("PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>") 
-   
+  prefixes.append("PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>")    
   ds_uri = "<http://melodi.irit.fr/resource/Dataset/dn_"+ str(ts) + ">"
   dis_uri = ds_uri.replace("Dataset","Distribution")
   triples.append("{} a dn:Dataset.".format(ds_uri))
-  triples.append("{} dcat:landingPage \"{}\".".format(ds_uri, ds.get("page")))
-  triples.append("{} dct:identifier \"{}\".".format(ds_uri, ds.get("id")))
-  triples.append("{} dn:hasSubject <http://melodi.irit.fr/resource/Subject/99>.".format(ds_uri))
-  triples.append("{} dct:title \"{}\".".format(ds_uri, ds.get("title")))
-  triples.append("{} dct:description \"\"\"{}\"\"\".".format(ds_uri, ds.get("description")))
+  triples.append("{} dn:hasSubject <http://melodi.irit.fr/resource/Subject/99>.".format(ds_uri))  
   triples.append("{} dcat:distribution {}.".format(ds_uri, dis_uri))
   triples.append("{} a dn:Distribution.".format(dis_uri))
-  triples.append("{} dcat:accessURL \"{}\".".format(dis_uri, ds.get("resources")[0].get("url")))
-  print( ds.get("resources")[0].get("filesize", 0))
-  if ds.get("resources")[0].get("filesize"):
-    triples.append("{} dcat:byteSize {}.".format(dis_uri, ds.get("resources")[0].get("filesize", 0))) 
-  triples.append("{} dct:identidier \"{}\".".format(dis_uri, ds.get("resources")[0].get("id"))) 
-  triples.append("{} dcat:mediaType \"{}\".".format(dis_uri, ds.get("resources")[0].get("mime")))
-  triples.append("{} dct:license \"{}\".".format(ds_uri, ds.get("license")))
-  triples.append("{} dct:issued \"{}\"^^xsd:dateTime.".format(ds_uri, ds.get("created_at")))    
-  for kw in ds.get("tags"):
-    triples.append("{} dcat:keyword \"{}\".".format(ds_uri, kw))
 
-  
+  if("dataverse" not in ds_site):
+    triples.append("{} dcat:landingPage \"{}\".".format(ds_uri, ds.get("page")))
+    triples.append("{} dct:identifier \"{}\".".format(ds_uri, ds.get("id")))
+    triples.append("{} dct:issued \"{}\"^^xsd:dateTime.".format(ds_uri, ds.get("created_at")))  
+    triples.append("{} dct:license \"{}\".".format(ds_uri, ds.get("license")))   
+    triples.append("{} dct:title \"{}\".".format(ds_uri, ds.get("title")))
+    triples.append("{} dct:description \"\"\"{}\"\"\".".format(ds_uri, ds.get("description")))
+    for kw in ds.get("tags"):
+      triples.append("{} dcat:keyword \"{}\".".format(ds_uri, kw))
+
+    triples.append("{} dcat:accessURL \"{}\".".format(dis_uri, ds.get("resources")[0].get("url")))
+    triples.append("{} dct:identidier \"{}\".".format(dis_uri, ds.get("resources")[0].get("id")))
+    if ds.get("resources")[0].get("filesize"):
+      triples.append("{} dcat:byteSize {}.".format(dis_uri, ds.get("resources")[0].get("filesize", 0))) 
+    triples.append("{} dcat:mediaType \"{}\".".format(dis_uri, ds.get("resources")[0].get("mime"))) 
+
+  else:
+    ds = ds.get("data")
+    print(ds.get("latestVersion").get("metadataBlocks"))
+    triples.append("{} dcat:landingPage \"{}\".".format(ds_uri, ds.get("persistentUrl")))
+    triples.append("{} dct:identifier \"{}\".".format(ds_uri, ds.get("identifier")))
+    triples.append("{} dct:issued \"{}\"^^xsd:dateTime.".format(ds_uri, ds.get("publicationDate")))
+    triples.append("{} dct:license \"{}\".".format(ds_uri, ds.get("latestVersion").get("license"))) 
+    for att in ds.get("latestVersion").get("metadataBlocks").get("citation").get("fields"):
+      if att.get("typeName") =="title":
+        triples.append("{} dct:title \"{}\".".format(ds_uri, att.get("value")))  
+      if att.get("typeName") == "dsDescription":
+        for desc in att.get("value"):
+          triples.append("{} dct:description \"\"\"{}\"\"\".".format(ds_uri, desc.get("dsDescriptionValue").get("value")))
+      if att.get("typeName") == "keyword":
+        for kw in att.get("value"):
+          triples.append("{} dcat:keyword \"{}\".".format(ds_uri, kw.get("keywordValue").get("value")))    
+     
+    triples.append("{} dcat:accessURL \"{}\".".format(dis_uri, ds.get("latestVersion").get("files")[0].get("label")))
+    triples.append("{} dcat:byteSize {}.".format(dis_uri, ds.get("latestVersion").get("files")[0].get("dataFile").get("filesize")))
+    triples.append("{} dcat:mediaType \"{}\".".format(dis_uri, ds.get("latestVersion").get("files")[0].get("dataFile").get("originalFileFormat")))
+
   insert_data("\n ".join(prefixes), "\n ".join(triples))
   return HttpResponse("ok")
 
@@ -513,7 +539,7 @@ def get_dataset(request):
   PREFIX dct: <http://purl.org/dc/terms/>
   PREFIX dcat: <http://www.w3.org/ns/dcat#>
   PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>
-  select ?dn ?title ?description ?issued ?subject where {{ 
+  select distinct ?dn ?title ?description ?issued ?subject where {{ 
 	?dn a  dn:Dataset.
     ?dn dct:issued ?issued.
     ?dn dct:title ?title.
