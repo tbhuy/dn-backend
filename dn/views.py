@@ -19,7 +19,8 @@ dataverse = "http://localhost:8085"
 dataverse_ex = "http://localhost:8085" 
 #dataverse = "http://melodi.irit.fr:8080"
 #dataverse_ex = "http://localhost:8085" 
-dv_key = "64d131ba-170e-47f2-abb3-410a86ed91c2"
+dv_key = "9cc13e11-6ac8-42bc-8dc5-28a0c4e622da"
+
 
 def import_meta(request):
   ds_id = request.GET.get('id') 
@@ -114,7 +115,8 @@ def  upload_distribution(request):
     file_uploaded = request.FILES.get('file_uploaded')
     pid = request.POST.get('pid')
     uri = request.POST.get('uri')
-    id = request.POST.get('id')
+    file_id = request.POST.get('id')
+    file_format = request.POST.get('format')
     r = requests.post(dataverse + "/api/datasets/:persistentId/add?persistentId="+pid, files={'file': file_uploaded}, data={"description":"Initial file"}, headers={ 'X-Dataverse-key': dv_key})
     
       #{"status":"OK","data":{"files":[{"description":"","label":"dcat.csv","restricted":false,"version":1,"datasetVersionId":13,"dataFile":{"id":22,"persistentId":"","pidURL":"","filename":"dcat.csv","contentType":"text/csv","filesize":10887,"description":"","storageIdentifier":"local://175e1e0e2b5-68f3d93a8f1d","rootDataFileId":-1,"md5":"60e5abb7a8c9207456490df444659211","checksum":{"type":"MD5","value":"60e5abb7a8c9207456490df444659211"},"creationDate":"2020-11-19"}}]}}
@@ -128,15 +130,17 @@ def  upload_distribution(request):
         prefixes.append("PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>")
         triples = []        
         rs = json.loads(r.text).get("data").get("files")[0].get("dataFile")
-        dis = "<http://melodi.irit.fr/resource/Distribution/{}-{}>".format( id, rs.get("id"))
+        dis = "<http://melodi.irit.fr/resource/Distribution/{}-{}>".format( file_id, rs.get("id"))
         triples.append("{} dcat:distribution {}.".format(uri, dis))
         triples.append("{} a dcat:Distribution.".format(dis))
         triples.append("{} dcat:byteSize {}.".format(dis, rs.get("filesize")))
         triples.append("{} dcat:downloadURL \"{}/api/access/datafile/{}\".".format(dis, dataverse_ex, rs.get("id")))
         triples.append("{} dcat:mediaType \"{}\".".format(dis, rs.get("contentType")))
-        triples.append("{} dct:description \"{}\".".format(dis, rs.get("filename")))
-        triples.append("{} dct:issued \"{}\"^^xsd:date.".format(dis, rs.get("creationDate")))        
-        #print(triples)
+        triples.append("{} dct:description \"{}\".".format(dis, rs.get("filename")))    
+        triples.append("{} dct:issued \"{}\"^^xsd:date.".format(dis, rs.get("creationDate")))   
+        triples.append("{} dn:hasFormat <{}>.".format(dis, file_format))  
+   
+        print(triples)
         insert_data("\n ".join(prefixes), "\n ".join(triples))
         return HttpResponse("ok")
     else:
