@@ -14,12 +14,17 @@ from django.core.files.storage import FileSystemStorage
 from django.http import FileResponse
 from django.views.decorators.csrf import csrf_exempt
 
-graphdb = "http://172.17.0.4:7200/repositories/dn"
-dataverse = "http://localhost:8085"
-dataverse_ex = "http://localhost:8085" 
+graphdb = "#GRAPHDB#"
+dataverse = "#DATAVERSE#"
+dataverse_ex = "#DATAVERSEEX#" 
+dv_key = "#DATAVERSEKEY#"
+
+#graphdb = "http://172.17.0.4:7200/repositories/dn"
+#dataverse = "http://localhost:8085"
+#dataverse_ex = "http://localhost:8085" 
 #dataverse = "http://melodi.irit.fr:8080"
 #dataverse_ex = "http://localhost:8085" 
-dv_key = "9cc13e11-6ac8-42bc-8dc5-28a0c4e622da"
+#dv_key = "9cc13e11-6ac8-42bc-8dc5-28a0c4e622da"
 site = {}
 site['data.gouv.fr'] = 'https://www.data.gouv.fr/api/1/datasets/'
 site['dataverse.ird.fr'] = 'https://dataverse.ird.fr/api/datasets/:persistentId/?persistentId='
