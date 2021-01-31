@@ -3,24 +3,33 @@ from SPARQLWrapper import SPARQLWrapper, JSON, POST, DIGEST, INSERT, BASIC
 import requests
 import os
 from django.views.decorators.csrf import csrf_exempt
+import json
+from django.conf import settings
 
-graphdb = "#GRAPHDB#"
+#graphdb = "#GRAPHDB#"
 dataverse = "#DATAVERSE#"
 dataverse_ex = "#DATAVERSEEX#" 
 dv_key = "#DATAVERSEKEY#"
 graphdb_user = "#GRAPHDBUSER#"
 graphdb_pwd = "#GRAPHDBPWD#"
 
-#graphdb = "http://172.17.0.4:7200/repositories/dn"
+graphdb = "http://172.17.0.4:7200/repositories/dn"
 #dataverse = "http://localhost:8085"
 #dataverse_ex = "http://localhost:8085" 
 #dataverse = "http://melodi.irit.fr:8080"
 #dataverse_ex = "http://localhost:8085" 
 #dv_key = "9cc13e11-6ac8-42bc-8dc5-28a0c4e622da"
-site = {}
-site['data.gouv.fr'] = 'https://www.data.gouv.fr/api/1/datasets/'
-site['dataverse.ird.fr'] = 'https://dataverse.ird.fr/api/datasets/:persistentId/?persistentId='
 
+
+def read_sites():
+  files_path = os.path.join(settings.BASE_DIR, 'public',  'static', 'sites.json') 
+  json_file = open(files_path)   
+  json_data = json.load(json_file)
+  json_file.close()
+  return json_data
+
+def get_sites(request):
+  return JsonResponse(read_sites(), safe=False) 
 
 def query(str):
     sparql = SPARQLWrapper(graphdb)

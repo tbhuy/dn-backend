@@ -18,6 +18,7 @@ from django.urls import path
 from dn import agent, claim, dataset, publication, workflow, utils, meta
 
 urlpatterns = [
+    path('api/show-dataset', dataset.show_dataset, name='show-dataset'),
     path('api/import-meta', meta.import_meta, name='import-meta'),
     path('api/new-meta', meta.new_meta, name='new-meta'),
     path('api/onto', utils.get_ontologies, name='ontologies'),
@@ -53,4 +54,5 @@ urlpatterns = [
     path('api/distributions', dataset.get_distributions, name='distributions'),
     path('api/new-distribution', dataset.upload_distribution, name='new-distribution'),
     path('api/preview', utils.view_file, name='preview'),
+    path('api/sites', utils.get_sites, name='sites'),
 ]

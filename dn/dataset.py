@@ -140,6 +140,125 @@ def get_operations(request):
    
     return JsonResponse({'rs':json}, safe=False)  
 
+    
+def show_dataset(request):
+  uri = "<" + request.GET.get("uri")  + ">"
+ 
+  results = utils.query("""PREFIX dc: <http://purl.org/dc/elements/1.1/>
+  PREFIX dct: <http://purl.org/dc/terms/>
+  PREFIX dcat: <http://www.w3.org/ns/dcat#>
+  PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>
+  PREFIX locn: <http://www.w3.org/ns/locn#>
+  PREFIX geo: <http://www.opengis.net/ont/geosparql#>
+  select distinct ?dn ?title ?description ?issued ?subject ?note ?geom where {{ 
+	  {} a  dn:Dataset.
+    {} dct:issued ?issued.
+    {} dct:title ?title.
+    {} dct:description ?description.
+    {} dn:hasSubject ?subj.
+  OPTIONAL{{ {} dn:note ?note.}}
+  OPTIONAL{{ {}  dct:spatial ?sp.
+          ?sp locn:geometry ?geom.}}
+    
+    ?subj dn:name ?subject.}}""".format(uri, uri, uri, uri, uri, uri, uri))
+  
+
+  result = results["results"]["bindings"][0]
+  json = {'title':result["title"]["value"], 'description': result["description"]["value"], 'issued': result["issued"]["value"], 'subject': result["subject"]["value"]}
+  if result.get("note"):
+    json["note"] = result["note"]["value"]
+  if result.get("geom"):
+    json["geom"] = result["geom"]["value"]
+
+  results = utils.query("""PREFIX dc: <http://purl.org/dc/elements/1.1/>
+  PREFIX dct: <http://purl.org/dc/terms/>
+  PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+  PREFIX dcat: <http://www.w3.org/ns/dcat#>
+  PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>
+  select distinct ?creator ?creator_name where {{ 
+	  {} a  dn:Dataset.
+    {} dct:creator ?creator.
+    ?creator foaf:name ?creator_name.}}""".format(uri, uri))
+
+
+  json2 = []
+  for result in results["results"]["bindings"]:
+    json2.append({'uri':result["creator"]["value"], 'name': result["creator_name"]["value"]})
+  json["creators"] = json2
+
+
+  results = utils.query("""PREFIX dc: <http://purl.org/dc/elements/1.1/>
+  PREFIX dct: <http://purl.org/dc/terms/>
+  PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+  PREFIX dcat: <http://www.w3.org/ns/dcat#>
+  PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>
+  select distinct ?publisher ?publisher_name where {{ 
+	  {} a  dn:Dataset.
+    {} dct:publisher ?publisher.
+    ?publisher foaf:name ?publisher_name.}}""".format(uri, uri))
+
+
+  json21 = []
+  for result in results["results"]["bindings"]:
+    json21.append({'uri':result["publisher"]["value"], 'name': result["publisher_name"]["value"]})
+  json["publishers"] = json21
+
+
+
+  results = utils.query("""PREFIX dc: <http://purl.org/dc/elements/1.1/>
+  PREFIX dct: <http://purl.org/dc/terms/>
+  PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+  PREFIX dcat: <http://www.w3.org/ns/dcat#>
+  PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>
+  select distinct ?depositor ?depositor where {{ 
+	  {} a  dn:Dataset.
+    {} dn:depositor ?depositor.
+    ?depositor foaf:name ?depositor.}}""".format(uri, uri))
+
+
+  json22 = []
+  for result in results["results"]["bindings"]:
+    json22.append({'uri':result["depositor"]["value"], 'name': result["depositor_name"]["value"]})
+  json["depositors"] = json22
+
+
+  results = utils.query("""PREFIX dc: <http://purl.org/dc/elements/1.1/>
+  PREFIX dct: <http://purl.org/dc/terms/>
+  PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+  PREFIX dcat: <http://www.w3.org/ns/dcat#>
+  PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>
+  select distinct ?keyword where {{ 
+	  {} a  dn:Dataset.
+    {} dcat:keyword ?keyword.}}""".format(uri, uri))
+
+  json3 = []
+  for result in results["results"]["bindings"]:
+    json3.append({'keyword':result["keyword"]["value"]})
+  json["keywords"] = json3
+
+
+  results = utils.query("""PREFIX dc: <http://purl.org/dc/elements/1.1/>
+  PREFIX dct: <http://purl.org/dc/terms/>
+  PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+  PREFIX dcat: <http://www.w3.org/ns/dcat#>
+  PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>
+  select ?article ?title ?issued ?identifier where {{ 
+	  {} a  dn:Dataset.
+    {} dn:presentedIn ?article.
+    ?article dct:title ?title.
+    ?article dct:issued ?issued.
+    ?article dct:identifier ?identifier.}}
+    """.format(uri, uri))
+
+  json4 = []
+  for result in results["results"]["bindings"]:
+    json4.append({'uri':result["article"]["value"], 'DOI': result["identifier"]["value"],  'title': result["title"]["value"], 'issued': result["issued"]["value"]})   
+ 
+  json["publication"] = json4
+
+  return JsonResponse({'rs':json}, safe=False)  
+
+
 def get_dataset(request):
   if request.GET.get("search") == "title":
     filter = 'FILTER regex(str(?title), "' + request.GET.get('value')+ '", "i")'

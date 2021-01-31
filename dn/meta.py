@@ -2,13 +2,23 @@ from django.http import HttpResponse, JsonResponse
 import json
 from django.views.decorators.csrf import csrf_exempt
 from dn import utils
+import time
+import requests
+import urllib3
 
 def import_meta(request):
-
+  sites = utils.read_sites()
   ds_id = request.GET.get('id') 
-  ds_site = site.get(request.GET.get('site'))
+  ds_site = ""
+  ds_type = ""
+  for site in sites:
+    if site.get("name") == request.GET.get('site'):
+      ds_site = site.get("api") 
+      ds_type = site.get("type") 
+
 
   ts = round(time.time()*1000)
+  requests.packages.urllib3.util.ssl_.DEFAULT_CIPHERS = 'ALL:@SECLEVEL=1'
   resp = requests.get(ds_site + str(ds_id))
   ds = resp.json()  
   triples = []   
@@ -25,7 +35,7 @@ def import_meta(request):
   triples.append("{} dcat:distribution {}.".format(ds_uri, dis_uri))
   triples.append("{} a dn:Distribution.".format(dis_uri))
 
-  if("dataverse" not in ds_site):
+  if("dataverse" not in ds_type):
     triples.append("{} dcat:landingPage \"{}\".".format(ds_uri, ds.get("page")))
     triples.append("{} dct:identifier \"{}\".".format(ds_uri, ds.get("id")))
     triples.append("{} dct:issued \"{}\"^^xsd:dateTime.".format(ds_uri, ds.get("created_at")))  

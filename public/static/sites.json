@@ -1,0 +1,50 @@
+[
+    {
+        "name": "data.gouv.fr",
+        "url": "https://www.data.gouv.fr/api/1/datasets/?page=0&page_size=20&q=",
+        "api": "https://www.data.gouv.fr/api/1/datasets/",
+        "type": "other"
+    },
+
+    {
+        "name": "dataverse.ird.fr",
+        "url": "https://dataverse.ird.fr/api/search?type=dataset&q=",
+        "api": "https://dataverse.ird.fr/api/datasets/:persistentId/?persistentId=",
+        "type": "dataverse"
+    },
+
+    {
+        "name": "dataverse.inrea.fr",
+        "url": "https://data.inrae.fr/api/search?type=dataset&q=",
+        "api": "https://data.inrae.fr/api/datasets/:persistentId/?persistentId=",
+        "type": "dataverse"
+    },
+
+    {
+        "name": "research-data.ifsttar.fr",
+        "url": "https://research-data.ifsttar.fr/api/search?type=dataset&q=",
+        "api": "https://research-data.ifsttar.fr/api/datasets/:persistentId/?persistentId=",
+        "type": "dataverse"
+    },
+
+    {
+        "name": "dataverse.asu.edu",
+        "url": "https://dataverse.asu.edu/api/search?type=dataset&q=",
+        "api": "https://dataverse.asu.edu/api/datasets/:persistentId/?persistentId=",
+        "type": "dataverse"
+    },
+
+    {
+        "name": "dataverse.uclouvain.be",
+        "url": "https://dataverse.uclouvain.be/api/search?type=dataset&q=",
+        "api": "https://dataverse.uclouvain.be/api/datasets/:persistentId/?persistentId=",
+        "type": "dataverse"
+    },
+
+    {
+        "name": "dataverse.harvard.edu",
+        "url": "https://dataverse.harvard.edu/api/search?type=dataset&q=",
+        "api": "https://dataverse.harvard.edu/api/datasets/:persistentId/?persistentId=",
+        "type": "dataverse"
+    }
+]
