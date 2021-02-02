@@ -140,7 +140,7 @@ def get_operations(request):
    
     return JsonResponse({'rs':json}, safe=False)  
 
-    
+# return json for displaying dataset metadata in Normal view mode    
 def show_dataset(request):
   uri = "<" + request.GET.get("uri")  + ">"
  
@@ -150,9 +150,11 @@ def show_dataset(request):
   PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>
   PREFIX locn: <http://www.w3.org/ns/locn#>
   PREFIX geo: <http://www.opengis.net/ont/geosparql#>
-  select distinct ?dn ?title ?description ?issued ?subject ?note ?geom where {{ 
+  select distinct ?dn ?title ?description ?issued ?subject ?note ?geom ?identifier ?page where {{ 
 	  {} a  dn:Dataset.
     {} dct:issued ?issued.
+    {} dct:identifier ?identifier.
+    {} dcat:landingPage ?page.
     {} dct:title ?title.
     {} dct:description ?description.
     {} dn:hasSubject ?subj.
@@ -160,11 +162,11 @@ def show_dataset(request):
   OPTIONAL{{ {}  dct:spatial ?sp.
           ?sp locn:geometry ?geom.}}
     
-    ?subj dn:name ?subject.}}""".format(uri, uri, uri, uri, uri, uri, uri))
+    ?subj dn:name ?subject.}}""".format(uri, uri, uri, uri, uri, uri, uri, uri, uri))
   
 
   result = results["results"]["bindings"][0]
-  json = {'title':result["title"]["value"], 'description': result["description"]["value"], 'issued': result["issued"]["value"], 'subject': result["subject"]["value"]}
+  json = {'title':result["title"]["value"], 'description': result["description"]["value"], 'issued': result["issued"]["value"], 'identifier': result["identifier"]["value"], 'page': result["page"]["value"], 'subject': result["subject"]["value"]}
   if result.get("note"):
     json["note"] = result["note"]["value"]
   if result.get("geom"):
@@ -255,6 +257,43 @@ def show_dataset(request):
     json4.append({'uri':result["article"]["value"], 'DOI': result["identifier"]["value"],  'title': result["title"]["value"], 'issued': result["issued"]["value"]})   
  
   json["publication"] = json4
+
+  results = utils.query("""PREFIX dc: <http://purl.org/dc/elements/1.1/>
+  PREFIX dct: <http://purl.org/dc/terms/>
+  PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+  PREFIX dcat: <http://www.w3.org/ns/dcat#>
+  PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>
+  select ?dist ?size ?downloadURL ?mediaType ?format where {{ 
+	  {} a  dn:Dataset.
+    {} dcat:distribution ?dist.  
+    ?dist dcat:downloadURL ?downloadURL.  
+    OPTIONAL{{   
+    ?dist dcat:byteSize ?size.
+    ?dist dcat:mediaType ?mediaType. 
+    ?dist dn:hasFormat ?fo.
+    ?fo rdfs:label ?format.}}
+    }}
+    """.format(uri, uri))
+  json5 = []
+
+  for result in results["results"]["bindings"]:
+    json51 = {'uri':result["dist"]["value"], 'downloadURL': result["downloadURL"]["value"]}
+    if result.get("format"):
+      json51["format"] = result["format"]["value"]
+    else:
+      json51["format"] = "Unknown"
+    if result.get("size"):
+      json51["size"] = result["size"]["value"]
+    else:
+      json51["size"] = "Unknown"  
+    if result.get("mediaType"):
+      json51["mediaType"] = result["mediaType"]["value"]
+    else:
+      json51["mediaType"] = "Unknown"
+    json5.append(json51)
+ 
+  json["dists"] = json5
+
 
   return JsonResponse({'rs':json}, safe=False)  
 

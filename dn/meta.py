@@ -15,6 +15,7 @@ def import_meta(request):
     if site.get("name") == request.GET.get('site'):
       ds_site = site.get("api") 
       ds_type = site.get("type") 
+      
 
 
   ts = round(time.time()*1000)
@@ -45,7 +46,7 @@ def import_meta(request):
     for kw in ds.get("tags"):
       triples.append("{} dcat:keyword \"{}\".".format(ds_uri, kw))
 
-    triples.append("{} dcat:accessURL \"{}\".".format(dis_uri, ds.get("resources")[0].get("url")))
+    triples.append("{} dcat:downloadURL \"{}\".".format(dis_uri, ds.get("resources")[0].get("url")))
     triples.append("{} dct:identidier \"{}\".".format(dis_uri, ds.get("resources")[0].get("id")))
     if ds.get("resources")[0].get("filesize"):
       triples.append("{} dcat:byteSize {}.".format(dis_uri, ds.get("resources")[0].get("filesize", 0))) 
@@ -67,9 +68,9 @@ def import_meta(request):
       if att.get("typeName") == "keyword":
         for kw in att.get("value"):
           triples.append("{} dcat:keyword \"{}\".".format(ds_uri, kw.get("keywordValue").get("value")))    
-     
-    triples.append("{} dcat:accessURL \"{}\".".format(dis_uri, ds.get("latestVersion").get("files")[0].get("label")))
-    triples.append("{} dcat:byteSize {}.".format(dis_uri, ds.get("latestVersion").get("files")[0].get("dataFile").get("filesize")))
+
+    triples.append("{} dcat:downloadURL \"{}\".".format(dis_uri, "https://" + request.GET.get('site') + "/api/access/datafile/" + str(ds.get("latestVersion").get("files")[0].get("dataFile").get("id"))))
+    triples.append("{} dcat:byteSize {}.".format(dis_uri,ds.get("latestVersion").get("files")[0].get("dataFile").get("filesize")))
     triples.append("{} dcat:mediaType \"{}\".".format(dis_uri, ds.get("latestVersion").get("files")[0].get("dataFile").get("originalFileFormat")))
 
   utils.insert_data("\n ".join(prefixes), "\n ".join(triples))

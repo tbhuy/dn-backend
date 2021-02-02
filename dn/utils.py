@@ -32,6 +32,7 @@ def get_sites(request):
   return JsonResponse(read_sites(), safe=False) 
 
 def query(str):
+    
     sparql = SPARQLWrapper(graphdb)
     sparql.setReturnFormat(JSON)
     sparql.setQuery(str)        
