@@ -291,6 +291,30 @@ def show_dataset(request):
     else:
       json51["mediaType"] = "Unknown"
     json5.append(json51)
+
+
+  results = utils.query("""PREFIX dc: <http://purl.org/dc/elements/1.1/>
+  PREFIX dct: <http://purl.org/dc/terms/>
+  PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+  PREFIX dcat: <http://www.w3.org/ns/dcat#>
+  PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>
+  PREFIX prov-o: <http://www.w3.org/ns/prov#>
+  select ?agent ?agent_name ?atTime ?source ?site where {{ 
+	  {} a  dn:Dataset.  
+    {} prov-o:wasDerivedFrom  ?source.
+    {} prov-o:wasGeneratedBy ?act.
+    ?act prov-o:atTime ?atTime.
+    ?act dn:harvestSource ?site.
+    ?act prov-o:wasAssociatedWith ?agent.
+    ?agent foaf:name ?agent_name.}}
+    """.format(uri, uri, uri))
+
+  json6 = {}
+  if len(results["results"]["bindings"])>0:
+    result = results["results"]["bindings"][0]
+    json6 = {'agent':result["agent"]["value"], 'agentName': result["agent_name"]["value"],  'atTime': result["atTime"]["value"], 'source': result["source"]["value"], 'site': result["site"]["value"]} 
+ 
+  json["provo"] = json6  
  
   json["dists"] = json5
 

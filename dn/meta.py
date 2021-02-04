@@ -3,8 +3,10 @@ import json
 from django.views.decorators.csrf import csrf_exempt
 from dn import utils
 import time
+import datetime
 import requests
 import urllib3
+import pytz
 
 def import_meta(request):
   sites = utils.read_sites()
@@ -28,16 +30,27 @@ def import_meta(request):
   prefixes.append("PREFIX foaf: <http://xmlns.com/foaf/0.1/>")
   prefixes.append("PREFIX dcat: <http://www.w3.org/ns/dcat#>")
   prefixes.append("PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>")
-  prefixes.append("PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>")    
+  prefixes.append("PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>")   
+  prefixes.append("PREFIX prov-o: <http://www.w3.org/ns/prov#>")   
+  
   ds_uri = "<http://melodi.irit.fr/resource/Dataset/dn_"+ str(ts) + ">"
   dis_uri = ds_uri.replace("Dataset","Distribution")
+  act_uri = ds_uri.replace("Dataset","Activity")
   triples.append("{} a dn:Dataset.".format(ds_uri))
   triples.append("{} dn:hasSubject <http://melodi.irit.fr/resource/Subject/99>.".format(ds_uri))  
   triples.append("{} dcat:distribution {}.".format(ds_uri, dis_uri))
   triples.append("{} a dn:Distribution.".format(dis_uri))
 
+
+
   if("dataverse" not in ds_type):
-    triples.append("{} dcat:landingPage \"{}\".".format(ds_uri, ds.get("page")))
+    triples.append("{} prov-o:wasDerivedFrom <{}>.".format(ds_uri, ds.get("page")))
+    triples.append("{} prov-o:wasGeneratedBy {}.".format(ds_uri, act_uri))
+    triples.append("{} a prov-o:Activity.".format(act_uri))
+    triples.append("{} prov-o:wasAssociatedWith <http://melodi.irit.fr/resources/Agent/1>.".format(act_uri))
+    triples.append("{} dn:harvestSource \"{}\".".format(act_uri, request.GET.get('site')))
+    triples.append("{} prov:atTime \"{}\"^^xsd:dateTime.".format(act_uri, datetime.datetime.now(pytz.utc).isoformat())) 
+    triples.append("{} dcat:landingPage \"{}\".".format(ds_uri, ds.get("page")))    
     triples.append("{} dct:identifier \"{}\".".format(ds_uri, ds.get("id")))
     triples.append("{} dct:issued \"{}\"^^xsd:dateTime.".format(ds_uri, ds.get("created_at")))  
     triples.append("{} dct:license \"{}\".".format(ds_uri, ds.get("license")))   
@@ -56,6 +69,12 @@ def import_meta(request):
     ds = ds.get("data")
     print(ds.get("latestVersion").get("metadataBlocks"))
     triples.append("{} dcat:landingPage \"{}\".".format(ds_uri, ds.get("persistentUrl")))
+    triples.append("{} prov-o:wasDerivedFrom <{}>.".format(ds_uri, ds.get("persistentUrl")))
+    triples.append("{} prov-o:wasGeneratedBy {}.".format(ds_uri, act_uri))
+    triples.append("{} a prov-o:Activity.".format(act_uri))
+    triples.append("{} prov-o:wasAssociatedWith <http://melodi.irit.fr/resources/Agent/1>.".format(act_uri))
+    triples.append("{} dn:harvestSource \"{}\".".format(act_uri, request.GET.get('site')))
+    triples.append("{} prov:atTime \"{}\"^^xsd:dateTime.".format(act_uri, datetime.datetime.now(pytz.utc).isoformat()))
     triples.append("{} dct:identifier \"{}\".".format(ds_uri, ds.get("identifier")))
     triples.append("{} dct:issued \"{}\"^^xsd:dateTime.".format(ds_uri, ds.get("publicationDate")))
     triples.append("{} dct:license \"{}\".".format(ds_uri, ds.get("latestVersion").get("license"))) 
