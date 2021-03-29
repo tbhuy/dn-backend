@@ -3,6 +3,7 @@ from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from dn import utils
 
+#Get information of a claim
 def get_claim(request):  
   results = utils.query("""
   PREFIX mp:  <http://purl.org/mp/>
@@ -21,6 +22,7 @@ def get_claim(request):
     json.append({'uri':result["uri"]["value"], 'statement': result["statement"]["value"]})   
   return JsonResponse({'rs':json}, safe=False)
 
+#Get all claims
 def get_claims(request):  
   results = utils.query("""
   PREFIX mp:  <http://purl.org/mp/>
@@ -39,7 +41,7 @@ def get_claims(request):
     json.append({'uri':result["uri"]["value"], 'statement': result["statement"]["value"], 'publication': result["title"]["value"]})   
   return JsonResponse({'rs':json}, safe=False)
 
-
+#Create a claim
 @csrf_exempt
 def new_claim(request):
   data = json.loads(request.body)

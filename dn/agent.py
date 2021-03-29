@@ -3,6 +3,7 @@ from django.views.decorators.csrf import csrf_exempt
 from dn import utils
 import json
 
+#Get all agents
 def get_agents(request):
     results = utils.query(""" PREFIX foaf: <http://xmlns.com/foaf/0.1/>
         SELECT ?uri ?name ?email 
@@ -26,6 +27,7 @@ def get_agents(request):
         json.append(ins)
     return JsonResponse({'rs':json}, safe=False)
 
+#Get an agent by his/her name
 def get_agent(request):
     results = utils.query(""" PREFIX foaf: <http://xmlns.com/foaf/0.1/>
         SELECT ?uri ?name ?email 
@@ -51,6 +53,7 @@ def get_agent(request):
         json.append(ins)
     return JsonResponse({'rs':json}, safe=False)
 
+#Create a new agent
 @csrf_exempt
 def new_agent(request):  
     data = json.loads(request.body)

@@ -4,16 +4,18 @@ from django.views.decorators.csrf import csrf_exempt
 from dn import utils
 
 @csrf_exempt
+# upload a distribution (a file), given the PID of the dataset (returned by Dataverse) 
 def  upload_distribution(request):  
     file_uploaded = request.FILES.get('file_uploaded')
     pid = request.POST.get('pid')
     uri = request.POST.get('uri')
     file_id = request.POST.get('id')
     file_format = request.POST.get('format')
+    #send the file to Dataverse and get its ID in return
     r = requests.post(dataverse + "/api/datasets/:persistentId/add?persistentId="+pid, files={'file': file_uploaded}, data={"description":"Initial file"}, headers={ 'X-Dataverse-key': dv_key})
     
       #{"status":"OK","data":{"files":[{"description":"","label":"dcat.csv","restricted":false,"version":1,"datasetVersionId":13,"dataFile":{"id":22,"persistentId":"","pidURL":"","filename":"dcat.csv","contentType":"text/csv","filesize":10887,"description":"","storageIdentifier":"local://175e1e0e2b5-68f3d93a8f1d","rootDataFileId":-1,"md5":"60e5abb7a8c9207456490df444659211","checksum":{"type":"MD5","value":"60e5abb7a8c9207456490df444659211"},"creationDate":"2020-11-19"}}]}}
-   
+    # if OK compose the triple describing the file (a distribution)
     if r.status_code == 200 or r.status_code == 201:  
         prefixes = []
         prefixes.append("PREFIX dct: <http://purl.org/dc/terms/>")
@@ -39,7 +41,7 @@ def  upload_distribution(request):
     else:
         return HttpResponse("failed")     
 
-
+# get all available datasets
 def get_datasets (request):
   results = utils.query("""  PREFIX dc: <http://purl.org/dc/elements/1.1/>
   PREFIX dct: <http://purl.org/dc/terms/>
@@ -59,6 +61,7 @@ def get_datasets (request):
     json.append({'uri':result["dn"]["value"], 'title':result["title"]["value"], 'description': result["desc"]["value"], 'issued': result["date"]["value"], 'subject': result["subj_name"]["value"]})
   return JsonResponse({'rs':json}, safe=False) 
 
+# get the most recent (six) datasets
 def list_recents(request):
   results = utils.query("""  PREFIX dc: <http://purl.org/dc/elements/1.1/>
   PREFIX dct: <http://purl.org/dc/terms/>
@@ -79,6 +82,8 @@ def list_recents(request):
     json.append({'uri':result["dn"]["value"], 'title':result["title"]["value"], 'description': result["desc"]["value"], 'issued': result["date"]["value"], 'subject': result["subj_name"]["value"]})
   return JsonResponse({'rs':json}, safe=False) 
 
+#get the location (X,Y) of all datasets
+#used to visualize them on the map 
 def get_loc(request):
     results = utils.query("""  PREFIX dct: <http://purl.org/dc/terms/>
 PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>
@@ -95,6 +100,9 @@ select ?dn ?title ?geom where {
    
     return JsonResponse({'rs':json}, safe=False) 
 
+
+#get the keywords of all datasets
+#used to display the word cloud
 def get_stat_key(request):
     results = utils.query("""PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>
 PREFIX dcat: <http://www.w3.org/ns/dcat#>
@@ -111,6 +119,8 @@ group by ?keyword""")
    
     return JsonResponse({'rs':json}, safe=False) 
 
+#get the subject of all datasets
+#used to display diagram
 def get_stat_subj(request):
     results = utils.query("""select ?name (count (?name) as ?total) where { 
 	?ds <http://melodi.irit.fr/ontologies/dn/hasSubject> ?subj .
@@ -123,6 +133,7 @@ def get_stat_subj(request):
    
     return JsonResponse({'rs':json}, safe=False) 
 
+#get all operations/functions
 def get_operations(request):
     results = utils.query("""PREFIX owl: <http://www.w3.org/2002/07/owl#>
   PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -140,7 +151,8 @@ def get_operations(request):
    
     return JsonResponse({'rs':json}, safe=False)  
 
-# return json for displaying dataset metadata in Normal view mode    
+# Get information of a dataset
+# used to display dataset metadata in Normal view mode    
 def show_dataset(request):
   uri = "<" + request.GET.get("uri")  + ">"
  
@@ -321,7 +333,7 @@ def show_dataset(request):
 
   return JsonResponse({'rs':json}, safe=False)  
 
-
+# Get a dataset based on its title or a keyword
 def get_dataset(request):
   if request.GET.get("search") == "title":
     filter = 'FILTER regex(str(?title), "' + request.GET.get('value')+ '", "i")'
@@ -349,7 +361,7 @@ def get_dataset(request):
     json.append({'uri':result["dn"]["value"], 'title':result["title"]["value"], 'description': result["description"]["value"], 'issued': result["issued"]["value"], 'subject': result["subject"]["value"]})
   return JsonResponse({'rs':json}, safe=False)  
 
-
+#Get all distributions of a dataset
 def get_distributions(request):  
   results = utils.query("""PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>
   PREFIX dcat: <http://www.w3.org/ns/dcat#>
@@ -366,6 +378,7 @@ def get_distributions(request):
     json.append({'uri':result["uri"]["value"], 'label':result["uri"]["value"][result["uri"]["value"].rindex('/')+1:] + ", format " + result["format"]["value"] + ", size " + result["size"]["value"] + " bytes", 'download': result["download"]["value"], 'size':result["size"]["value"], 'format':result["format"]["value"]})   
   return JsonResponse({'rs':json}, safe=False)
 
+#Get information of a distribution
 def get_distribution(request):  
   results = utils.query("""PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>
   PREFIX dcat: <http://www.w3.org/ns/dcat#>
@@ -383,7 +396,7 @@ def get_distribution(request):
     json.append({'size':result["size"]["value"], 'title':result["title"]["value"], 'format':result["format"]["value"], 'download': result["download"]["value"]})   
   return JsonResponse({'rs':json}, safe=False)
 
-
+# create a new dataset based on the form data sent by the frontend
 @csrf_exempt
 def new_dataset(request):  
     data = json.loads(request.body)
@@ -425,7 +438,7 @@ def new_dataset(request):
     #print("\n ".join(triples))
     sub = ["", "Arts and Humanities", "Astronomy and Astrophysics", "Business and Management","Chemistry", "Computer and Information Science","Earth and Environmental Sciences", "Engineering","Law","Mathematical Sciences","Medicine, Health and Life Sciences", "Physics", "Social Sciences", "Other"]
     triples.append("{} dn:hasSubject <http://melodi.irit.fr/resource/Subject/{}>.".format(data.get('uri'), data.get("subject")))
-    
+    #insert the dataset metadata into Dataverse
     str = """{{
   "datasetVersion": {{
     "metadataBlocks": {{
@@ -508,12 +521,11 @@ def new_dataset(request):
     print(str)
     print(r.content)
     print(r.status_code)
-    if r.status_code == 200 or r.status_code == 201:
-      rs = json.loads(r.text).get("data").get("persistentId")
+    if r.status_code == 200 or r.status_code == 201: #if OK, get the returned DOI/ID and insert the triples into the triplestore
+      rs = json.loads(r.text).get("data").get("persistentId")    
+      triples.append("{} dct:identifier \"{}\".".format(data.get('uri'), rs))
+      triples.append("{} dcat:landingPage \"{}/dataset.xhtml?persistentId={}\".".format(data.get('uri'), dataverse_ex, rs))
+      utils.insert_data("\n ".join(prefixes), "\n ".join(triples))
     else:
       rs = "failed"
-
-    triples.append("{} dct:identifier \"{}\".".format(data.get('uri'), rs))
-    triples.append("{} dcat:landingPage \"{}/dataset.xhtml?persistentId={}\".".format(data.get('uri'), dataverse_ex, rs))
-    utils.insert_data("\n ".join(prefixes), "\n ".join(triples))
     return JsonResponse({'doi':rs, 'page': dataverse_ex + '/dataset.xhtml?persistentId=' + rs} , safe=False)

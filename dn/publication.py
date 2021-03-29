@@ -4,6 +4,7 @@ from django.views.decorators.csrf import csrf_exempt
 from dn import utils
 
 @csrf_exempt
+# create a new publication with the data form sent by the frontend
 def new_pub(request):
   data = json.loads(request.body)
   prefixes = []
@@ -21,6 +22,8 @@ def new_pub(request):
   utils.insert_data("\n ".join(prefixes), "\n ".join(triples))  
   return JsonResponse({'result':'ok'} , safe=False)
 
+# get the publications based on their DOI (or ID)
+# used in search functions
 def get_pubs_doi(request):  
   results = utils.query("""
   PREFIX bibo: <http://purl.org/ontology/bibo/>
@@ -37,6 +40,7 @@ def get_pubs_doi(request):
     json.append({'uri':result["uri"]["value"], 'DOI': result["doi"]["value"],  'title': result["title"]["value"], 'date': result["date"]["value"]})   
   return JsonResponse({'rs':json}, safe=False)
 
+# get all publication
 def get_pubs(request):  
   results = utils.query("""
        PREFIX bibo: <http://purl.org/ontology/bibo/>
@@ -52,6 +56,8 @@ def get_pubs(request):
     json.append({'uri':result["uri"]["value"], 'title': result["title"]["value"], 'DOI': result["doi"]["value"]})   
   return JsonResponse({'rs':json}, safe=False)
 
+# get the publications based on their title
+# used in search functions
 def get_pubs_title(request):  
   results = utils.query("""
        PREFIX bibo: <http://purl.org/ontology/bibo/>

@@ -10,14 +10,15 @@ from django.core.files.storage import FileSystemStorage
 from django.views.decorators.csrf import csrf_exempt
 from dn import utils
 
+# execute a process
 def execute_workflow(request):
   python_path = sys.executable
-  time.sleep(1)
-  ts = round(time.time())
+  time.sleep(1) # sleep 1s before executing the process
+  ts = round(time.time()) # get the epoch and use it for the result file name
   files_path = os.path.join(settings.BASE_DIR, 'public',  'static', 'scripts')
-  input_file = "" if request.GET.get('in', '') == "" else os.path.join(files_path, request.GET.get('in', ''))
+  input_file = "" if request.GET.get('in', '') == "" else os.path.join(files_path, request.GET.get('in', '')) # get the input file name (if given) sent by the frontend
   print("input file: " + input_file)
-  uri = request.GET.get('uri', '')
+  uri = request.GET.get('uri', '') # get the service/or function URI
   print("service: " + uri)
   q = """
   PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>
@@ -30,15 +31,15 @@ def execute_workflow(request):
   }}
   }}""".format(uri, uri)
   #print(q)
-  results = utils.query(q)  
+  results = utils.query(q)  # query the triplestore to get the corresponding script file name and the output file format
   
   url = results["results"]["bindings"][0]["url"]["value"]
   print("url: " + url)
   out_format = "" if not results["results"]["bindings"][0].get("output") else ("." + results["results"]["bindings"][0]["output"]["value"])
-  params = "" if request.GET.get('params') == "None" else request.GET.get('params')
+  params = "" if request.GET.get('params') == "None" else request.GET.get('params') # get the parameters (if given) sent by the frontend
   output_file = os.path.join(files_path,  str(ts) + out_format)
   print("output file:" + output_file)
-  call = ["python3", url]
+  call = ["python3", url] 
   if input_file != "": 
     call.append(input_file)
   if params != "":
@@ -46,7 +47,7 @@ def execute_workflow(request):
   call.append(output_file)
   print(params)
   try:  
-    subprocess.call(call)
+    subprocess.call(call)  # use subprocess to execute the (python) script with the parameters and the output file name
     return JsonResponse({'rs':{'rs':'OK','file': str(ts) + out_format}}, safe=False)
   except subprocess.CalledProcessError as e:
     print(e.returncode)
@@ -54,7 +55,7 @@ def execute_workflow(request):
     print(e.output)
     return JsonResponse({'rs':{'rs':'Error','file': 'None'}}, safe=False)
 
- 
+# get all services/functions 
 def get_services(request):  
   results = utils.query("""
   PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>
@@ -79,6 +80,7 @@ def get_services(request):
    
   return JsonResponse({'rs':json}, safe=False) 
 
+# create a new service/function with the data form sent by the frontend
 @csrf_exempt
 def new_service(request):  
     file_uploaded = request.FILES.get('file_uploaded')

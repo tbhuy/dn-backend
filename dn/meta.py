@@ -8,13 +8,14 @@ import requests
 import urllib3
 import pytz
 
+#harvest metadata from other sites
 def import_meta(request):
   sites = utils.read_sites()
   ds_id = request.GET.get('id') 
   ds_site = ""
   ds_type = ""
   for site in sites:
-    if site.get("name") == request.GET.get('site'):
+    if site.get("name") == request.GET.get('site'): # get the access URL and type of the site (Dataverse or Others)
       ds_site = site.get("api") 
       ds_type = site.get("type") 
       
@@ -22,17 +23,17 @@ def import_meta(request):
 
   ts = round(time.time()*1000)
   requests.packages.urllib3.util.ssl_.DEFAULT_CIPHERS = 'ALL:@SECLEVEL=1'
-  resp = requests.get(ds_site + str(ds_id))
+  resp = requests.get(ds_site + str(ds_id)) # grap the metadata of the chosen dataset sent by the frontend
   ds = resp.json()  
   triples = []   
-  prefixes = []
+  prefixes = [] # declare the prefixes
   prefixes.append("PREFIX dct: <http://purl.org/dc/terms/>")
   prefixes.append("PREFIX foaf: <http://xmlns.com/foaf/0.1/>")
   prefixes.append("PREFIX dcat: <http://www.w3.org/ns/dcat#>")
   prefixes.append("PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>")
   prefixes.append("PREFIX dn: <http://melodi.irit.fr/ontologies/dn/>")   
   prefixes.append("PREFIX prov-o: <http://www.w3.org/ns/prov#>")   
-  
+  # compose the triples
   ds_uri = "<http://melodi.irit.fr/resource/Dataset/dn_"+ str(ts) + ">"
   dis_uri = ds_uri.replace("Dataset","Distribution")
   act_uri = ds_uri.replace("Dataset","Activity")
@@ -42,12 +43,12 @@ def import_meta(request):
   triples.append("{} a dn:Distribution.".format(dis_uri))
 
 
-
+  # check if it's a Dataverse or not because the metadata attributs aren't the same
   if("dataverse" not in ds_type):
     triples.append("{} prov-o:wasDerivedFrom <{}>.".format(ds_uri, ds.get("page")))
     triples.append("{} prov-o:wasGeneratedBy {}.".format(ds_uri, act_uri))
     triples.append("{} a prov-o:Activity.".format(act_uri))
-    triples.append("{} prov-o:wasAssociatedWith <http://melodi.irit.fr/resources/Agent/1>.".format(act_uri))
+    triples.append("{} prov-o:wasAssociatedWith <http://melodi.irit.fr/resource/Agent/1>.".format(act_uri))
     triples.append("{} dn:harvestSource \"{}\".".format(act_uri, request.GET.get('site')))
     triples.append("{} prov:atTime \"{}\"^^xsd:dateTime.".format(act_uri, datetime.datetime.now(pytz.utc).isoformat())) 
     triples.append("{} dcat:landingPage \"{}\".".format(ds_uri, ds.get("page")))    
@@ -72,7 +73,7 @@ def import_meta(request):
     triples.append("{} prov-o:wasDerivedFrom <{}>.".format(ds_uri, ds.get("persistentUrl")))
     triples.append("{} prov-o:wasGeneratedBy {}.".format(ds_uri, act_uri))
     triples.append("{} a prov-o:Activity.".format(act_uri))
-    triples.append("{} prov-o:wasAssociatedWith <http://melodi.irit.fr/resources/Agent/1>.".format(act_uri))
+    triples.append("{} prov-o:wasAssociatedWith <http://melodi.irit.fr/resource/Agent/1>.".format(act_uri))
     triples.append("{} dn:harvestSource \"{}\".".format(act_uri, request.GET.get('site')))
     triples.append("{} prov:atTime \"{}\"^^xsd:dateTime.".format(act_uri, datetime.datetime.now(pytz.utc).isoformat()))
     triples.append("{} dct:identifier \"{}\".".format(ds_uri, ds.get("identifier")))
@@ -92,13 +93,17 @@ def import_meta(request):
     triples.append("{} dcat:byteSize {}.".format(dis_uri,ds.get("latestVersion").get("files")[0].get("dataFile").get("filesize")))
     triples.append("{} dcat:mediaType \"{}\".".format(dis_uri, ds.get("latestVersion").get("files")[0].get("dataFile").get("originalFileFormat")))
 
+  # insert prefixes and triples to the triplestore
   utils.insert_data("\n ".join(prefixes), "\n ".join(triples))
   return HttpResponse("ok")
 
    
-
+# get all classes and their properties 
+# used to display (after filtering) the corresponding classes and appropriated properties for new metadata insertion
+# many ontologies don't use  rdfs:label, rdfs:comment and rdfs:isDefinedBy. Could be fixed!
 def get_data_props(request):
   classes = []
+  #get the corresponding classes (includes aligment/equivalent class/subclass..) of the instances
   results = utils.query(""" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> 
         SELECT distinct ?uri ?label ?comment ?onto
         WHERE {{
@@ -127,10 +132,11 @@ def get_data_props(request):
       cls["comment"] = '-'
     classes.append(cls)
 
- 
+  # consider also that the instance is a rdfs:Resource and owl:Thing, that aren't explicitly declared.
   classes.append({'uri':'http://www.w3.org/2000/01/rdf-schema#Resource', 'onto':'http://www.w3.org/2000/01/rdf-schema#', 'label':'Resource', 'comment':'The class resource, everything'})
   classes.append({'uri':'http://www.w3.org/2002/07/owl#Thing', 'onto':' http://www.w3.org/2002/07/owl#', 'label':'Thing', 'comment':'The class of OWL individuals'})
   
+  # for each classes above, get all properties. They will be used for new metadata insertion
   for clss in classes:
 
     json = []
@@ -164,7 +170,7 @@ def get_data_props(request):
     
  
 
-    #load props for dcterms
+    #Consider also properties from DCT that are declared in a different manner 
     json = []
     results = utils.query(""" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> 
         SELECT ?uri ?label ?comment  ?range
@@ -203,6 +209,7 @@ def get_data_props(request):
 
 
 @csrf_exempt
+#insert new metadata into the triplestore
 def new_meta(request):  
     data = json.loads(request.body)
     uri = data.get('uri')

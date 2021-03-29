@@ -20,7 +20,7 @@ graphdb = "http://172.17.0.4:7200/repositories/dn"
 #dataverse_ex = "http://localhost:8085" 
 #dv_key = "9cc13e11-6ac8-42bc-8dc5-28a0c4e622da"
 
-
+# read declared harvest sites from sites.json
 def read_sites():
   files_path = os.path.join(settings.BASE_DIR, 'public',  'static', 'sites.json') 
   json_file = open(files_path)   
@@ -28,9 +28,12 @@ def read_sites():
   json_file.close()
   return json_data
 
+# return a json containing all declared sites
 def get_sites(request):
   return JsonResponse(read_sites(), safe=False) 
 
+# send a SPARQL query to the triplestore (GraphDB)
+# return a SPARQL/JSON
 def query(str):
     
     sparql = SPARQLWrapper(graphdb)
@@ -40,6 +43,8 @@ def query(str):
     return results
 
 @csrf_exempt
+# send a SPARQL query to the triplestore (GraphDB)
+# return a JSON
 def query_KB(request):
    
     results = query(request.GET.get('query'))
@@ -53,7 +58,8 @@ def query_KB(request):
    
     return JsonResponse({'rs':json}, safe=False) 
 
-
+# download a file from django server
+# used to download results processed by workflows
 def download_file(request):
     file_name = request.GET.get('fn')
     file_path = os.path.join(settings.BASE_DIR, 'public',  'static', 'scripts')
@@ -62,6 +68,7 @@ def download_file(request):
     response['Content-Disposition'] = 'attachment; filename="'+ file_name+ '"'
     return response
 
+# used to display the 10 first lines of a file for quicklook
 def view_file(request):
     file_name = request.GET.get('fn')
     file_path = os.path.join(settings.BASE_DIR, 'public',  'static', 'scripts', file_name)
@@ -77,6 +84,8 @@ def view_file(request):
 
     return HttpResponse(data)
 
+# insert triples into the triplestore
+# don't forget to replace the graphdb_user and graphdb_pwd value
 def insert_data(prefixes, triples): 
     sparql = SPARQLWrapper(graphdb)
     sparql.setReturnFormat(JSON)
@@ -97,6 +106,7 @@ def insert_data(prefixes, triples):
     print(results.response.read())
     return results.response.read()
 
+# get all operations declared by the EDAM ontology
 def get_operations(request):
     results = query("""PREFIX owl: <http://www.w3.org/2002/07/owl#>
   PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -114,7 +124,7 @@ def get_operations(request):
    
     return JsonResponse({'rs':json}, safe=False)
 
-
+# get all file formats declared by the EDAM ontology
 def get_formats(request):
     results = query("""PREFIX owl: <http://www.w3.org/2002/07/owl#>
   PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -132,6 +142,8 @@ def get_formats(request):
    
     return JsonResponse({'rs':json}, safe=False)
 
+# get all triples whose subject is the received instance
+# used to display information related to the instance
 def get_instance(request):
     results = query("""PREFIX owl: <http://www.w3.org/2002/07/owl#>
   PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -147,7 +159,9 @@ def get_instance(request):
         json.append({'property':result["label"]["value"] + " (" + result["pre"]["value"] + ") ", 'value': result["prop"]["value"]})
    
     return JsonResponse({'rs':json}, safe=False)
-    
+
+# get all classes and their properties 
+# many ontologies don't use  rdfs:label, rdfs:comment and rdfs:isDefinedBy. Could be fixed!
 def get_classes(request):
   results = query(""" PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> 
         SELECT ?uri ?label ?comment ?onto
@@ -182,6 +196,8 @@ def get_classes(request):
   json.append({'uri':' http://www.w3.org/2002/07/owl#Thing', 'onto':' http://www.w3.org/2002/07/owl#', 'label':'Thing', 'comment':'The class of OWL individuals'})
   return JsonResponse({'rs':json}, safe=False)
 
+# get all imported ontologies 
+# many ontologies don't use dc:title to declare the ontology title, could be fixed!
 def get_ontologies(request):
     results = query(""" PREFIX dc: <http://purl.org/dc/terms/>
         SELECT ?uri ?title ?description 
